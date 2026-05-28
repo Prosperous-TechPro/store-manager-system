@@ -6,14 +6,11 @@ const resolveApiBase = () => {
 
   if (configuredBase) {
     const normalized = configuredBase.replace(/\/$/, '')
-    if (!isLocalDev && typeof window !== 'undefined' && normalized === window.location.origin) {
-      return `${normalized}/api`
-    }
     return normalized
   }
 
   if (typeof window !== 'undefined' && !isLocalDev) {
-    return 'https://store-manager-system.onrender.com/api'
+    return '/api'
   }
 
   return 'http://localhost:4000/api'
