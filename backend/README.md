@@ -30,3 +30,9 @@ Notes:
 - Secure JWT_SECRET in production
 - Use connection pooling for DB
 - Add validation and rate-limiting
+
+Render deployment:
+- Deploy the backend as a Render Web Service with `rootDir: backend`.
+- Set `DATABASE_URL`, `JWT_SECRET`, and `CORS_ORIGIN` in Render environment variables.
+- Use `npm start` as the start command.
+- Point `CORS_ORIGIN` at your frontend domain, for example your Vercel URL.
