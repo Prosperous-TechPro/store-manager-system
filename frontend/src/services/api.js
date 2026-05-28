@@ -13,7 +13,7 @@ const resolveApiBase = () => {
   }
 
   if (typeof window !== 'undefined' && !isLocalDev) {
-    return `${window.location.origin}/api`
+    return 'https://store-manager-backend.onrender.com/api'
   }
 
   return 'http://localhost:4000/api'
