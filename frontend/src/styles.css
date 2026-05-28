@@ -1,0 +1,704 @@
+/* ==========================================================
+   Frontend stylesheet – organized and commented for readability
+   Sections:
+	 1) CSS Variables
+	 2) Base / Reset
+	 3) Layout & Page containers
+	 4) Topbar / Navigation / Brand
+	 5) Buttons & Controls
+	 6) Cards / Panels / Hero
+	 7) Landing & Showcases
+	 8) Grids & Utilities
+	 9) Metrics
+	10) Section helpers (titles, notes)
+	11) Policy / Forms / Auth
+	12) Tables / Tags
+	13) Footer
+	14) Modals / Overlays
+	15) Responsive tweaks
+   ========================================================== */
+
+/* ------------------------------
+   1) CSS Variables
+   Keep color palette and design tokens here for easy updates.
+   ------------------------------ */
+:root {
+	--bg-0: #07111f;
+	--bg-1: #0c1b2f;
+	--bg-2: #122640;
+	--surface: rgba(10, 18, 33, 0.72);
+	--surface-strong: #0d1728;
+	--surface-soft: rgba(255, 255, 255, 0.06);
+	--border: rgba(255, 255, 255, 0.12);
+	--text: #edf4ff;
+	--muted: #a8bbd6;
+	--primary: #26d0ce;
+	--primary-2: #6a85ff;
+	--accent: #ffb84d;
+	--success: #4ee59b;
+	--danger: #ff6b6b;
+	--shadow: 0 20px 50px rgba(0, 0, 0, 0.34);
+}
+
+
+/* ------------------------------
+   2) Base / Reset
+   Global defaults and small accessibility niceties.
+   ------------------------------ */
+* { box-sizing: border-box; }
+
+html, body, #root { min-height: 100%; }
+
+body {
+	margin: 0;
+	color: var(--text);
+	font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	background:
+		radial-gradient(circle at top left, rgba(38, 208, 206, 0.22), transparent 30%),
+		radial-gradient(circle at top right, rgba(106, 133, 255, 0.18), transparent 26%),
+		linear-gradient(160deg, var(--bg-0) 0%, var(--bg-1) 48%, #08121f 100%);
+}
+
+a { color: inherit; text-decoration: none; }
+
+button, input { font: inherit; }
+
+button {
+	border: 0;
+	cursor: pointer;
+	transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, opacity 160ms ease;
+}
+
+button:hover { transform: translateY(-1px); }
+button:disabled { cursor: not-allowed; opacity: 0.7; transform: none; }
+
+
+/* ------------------------------
+   3) Layout & Page containers
+   Global layout classes used across pages.
+   ------------------------------ */
+.app-shell { min-height: 100vh; }
+
+.page {
+	width: min(1160px, calc(100% - 32px));
+	margin: 0 auto;
+	padding: 28px 0 48px;
+}
+
+.static-page { display: grid; gap: 20px; }
+
+
+/* ------------------------------
+   4) Topbar / Navigation / Brand
+   Header and primary navigation styles.
+   ------------------------------ */
+.topbar {
+	position: sticky; top: 0; z-index: 20;
+	backdrop-filter: blur(18px);
+	background: linear-gradient(90deg, rgba(7, 17, 31, 0.78), rgba(12, 27, 47, 0.86));
+	border-bottom: 1px solid var(--border);
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+.topbar-inner {
+	width: min(1160px, calc(100% - 32px));
+	margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 0;
+}
+
+.brand { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: 0.2px; }
+.brand-mark { width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg, var(--primary), var(--primary-2)); box-shadow: 0 12px 24px rgba(38, 208, 206, 0.28); }
+.brand-copy { display: flex; flex-direction: column; line-height: 1.05; }
+.brand-copy span:last-child { color: var(--muted); font-size: 0.82rem; font-weight: 600; }
+
+.nav-links, .nav-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.nav-links a, .nav-actions a, .nav-chip { padding: 10px 14px; border-radius: 999px; color: var(--muted); border: 1px solid transparent; }
+.nav-links a:hover, .nav-actions a:hover { color: var(--text); border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); }
+.nav-links a.active { color: var(--text); background: linear-gradient(135deg, rgba(38, 208, 206, 0.18), rgba(106, 133, 255, 0.18)); border-color: rgba(38, 208, 206, 0.24); }
+
+
+/* ------------------------------
+   5) Buttons & Controls
+   Primary button styles and variants.
+   ------------------------------ */
+.button, button, .button-secondary { border-radius: 14px; padding: 11px 16px; font-weight: 700; }
+
+.button-primary { color: #02111e; background: linear-gradient(135deg, var(--primary), #8ff7d1); box-shadow: 0 14px 30px rgba(38, 208, 206, 0.24); }
+.button-secondary { color: var(--text); background: rgba(255,255,255,0.06); border: 1px solid var(--border); }
+.button-danger { color: #fff; background: linear-gradient(135deg, #ff7a59, var(--danger)); }
+
+
+/* ------------------------------
+   6) Cards / Panels / Common surfaces
+   Reusable surface styles (cards, panels, modals, etc.).
+   ------------------------------ */
+.hero-card, .panel, .metric-card, .auth-card, .table-card, .modal-body {
+	background: linear-gradient(180deg, rgba(13, 23, 40, 0.92), rgba(8, 15, 28, 0.92));
+	border: 1px solid var(--border); box-shadow: var(--shadow);
+}
+
+.hero-card { border-radius: 28px; padding: 28px; display: grid; gap: 18px; }
+.hero-title { margin: 0; font-size: clamp(2rem, 3vw, 3.4rem); line-height: 1.02; }
+.hero-subtitle, .muted, .helper-text { color: var(--muted); }
+
+.hero-actions, .section-actions, .table-toolbar, .auth-actions, .form-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+
+/* ------------------------------
+   7) Landing & Showcases
+   Hero layouts and marketing components.
+   ------------------------------ */
+.landing-page { display: grid; gap: 20px; }
+.landing-hero { grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr); align-items: stretch; }
+.hero-copy, .hero-showcase { display: grid; gap: 16px; }
+.hero-copy { align-content: start; }
+.spotlight-card { border-radius: 22px; padding: 22px; background: linear-gradient(135deg, rgba(38, 208, 206, 0.14), rgba(106, 133, 255, 0.12)); border: 1px solid rgba(255,255,255,0.12); }
+.showcase-title { margin: 4px 0 8px; font-size: 1.35rem; line-height: 1.1; }
+.landing-metrics { margin-top: 0; }
+
+
+/* ------------------------------
+   8) Grids & Utilities
+   Small utility classes for layout patterns.
+   ------------------------------ */
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
+.feature-card { min-height: 180px; }
+
+.feature-kicker { margin: 0 0 10px; color: var(--primary); font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; }
+.feature-card h3 { margin: 0 0 10px; font-size: 1.2rem; }
+
+.showcase-band { display: grid; grid-template-columns: minmax(0,1fr) minmax(280px,0.8fr); gap: 16px; padding: 22px; border-radius: 26px; background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.1); }
+.showcase-list { display: grid; gap: 12px; align-content: start; }
+.showcase-item { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:14px; background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); }
+.showcase-dot { width:10px; height:10px; border-radius:999px; background: linear-gradient(135deg, var(--primary), var(--accent)); box-shadow: 0 0 0 6px rgba(38,208,206,0.12); }
+
+
+/* ------------------------------
+   9) Metrics
+   Small component that displays numeric KPIs.
+   ------------------------------ */
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:16px; margin-top:18px; }
+.metric-card { border-radius:22px; padding:20px; position:relative; overflow:hidden; }
+.metric-card::after { content: ''; position:absolute; inset:auto -22px -30px auto; width:110px; height:110px; background: radial-gradient(circle, rgba(255,255,255,0.18), transparent 70%); }
+.metric-label { margin:0 0 10px; color:var(--muted); font-weight:700; letter-spacing:0.2px; }
+.metric-value { font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight:800; line-height:1; }
+.metric-accent { background: linear-gradient(135deg, rgba(38,208,206,0.18), rgba(106,133,255,0.18)); }
+.metric-warn { background: linear-gradient(135deg, rgba(255,184,77,0.18), rgba(255,107,107,0.16)); }
+.metric-success { background: linear-gradient(135deg, rgba(78,229,155,0.2), rgba(38,208,206,0.16)); }
+
+
+/* ------------------------------
+   10) Section helpers (titles, notes)
+   Small utilities for consistent typography.
+   ------------------------------ */
+.section-title { margin: 0 0 14px; font-size: 1.3rem; }
+.section-note { margin: 0; color: var(--muted); }
+
+
+/* ------------------------------
+   11) Policy / Forms / Auth
+   Inputs, selects, form grid, and auth-related styles.
+   ------------------------------ */
+.policy-list { margin:14px 0 0; padding-left:18px; color:var(--muted); display:grid; gap:10px; }
+.policy-check { display:flex; align-items:flex-start; gap:10px; color:var(--muted); font-size:0.92rem; }
+.policy-check input { width:18px; height:18px; margin-top:2px; }
+
+.auth-wrap { min-height: calc(100vh - 88px); display:grid; place-items:center; padding:28px 0 40px; }
+.auth-card { width: min(100%, 460px); }
+.auth-badge { display:inline-flex; align-items:center; gap:8px; margin-bottom:16px; padding:8px 12px; border-radius:999px; color:var(--muted); background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); }
+
+.form-grid { display:grid; gap:14px; }
+.form-field { display:grid; gap:8px; }
+.form-field label { color:#d9e5f7; font-size:0.92rem; font-weight:700; }
+
+input, select {
+	width:100%; padding:13px 14px; border-radius:14px; border:1px solid rgba(255,255,255,0.12); color:var(--text); background: rgba(255,255,255,0.04); outline:none; transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+input:focus, select:focus { border-color: rgba(38, 208, 206, 0.7); box-shadow: 0 0 0 4px rgba(38, 208, 206, 0.16); background: rgba(255,255,255,0.06); }
+
+/* Role select styling: light blue background for better visibility */
+.role-select { background: linear-gradient(180deg, #e6f7ff 0%, #d8f0ff 100%); color: #022033; border-color: rgba(2, 32, 51, 0.12); }
+.role-select:focus { border-color: rgba(38, 208, 206, 0.7); box-shadow: 0 0 0 4px rgba(38, 208, 206, 0.12); }
+.role-select option { background: #e6f7ff; color: #022033; }
+
+
+/* ------------------------------
+   12) Tables & Tags
+   Data table layout and tag styles.
+   ------------------------------ */
+.table-card, .panel, .auth-card { border-radius: 24px; padding: 22px; }
+.table-card { overflow: hidden; }
+
+table { width:100%; border-collapse: collapse; }
+th, td { padding: 14px 12px; text-align:left; border-bottom: 1px solid rgba(255,255,255,0.08); }
+th { color:var(--muted); font-size:0.84rem; text-transform:uppercase; letter-spacing:0.08em; }
+tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+.tag { display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:999px; font-size:0.88rem; font-weight:700; }
+.tag-success { color:#052014; background: linear-gradient(135deg, #7df0b4, #47d18a); }
+.tag-warn { color:#2e1b00; background: linear-gradient(135deg, #ffd36a, #ffb84d); }
+.tag-danger { color:#2a0000; background: linear-gradient(135deg, #ff9e9e, #ff6b6b); }
+
+
+/* ------------------------------
+   13) Footer
+   Site footer and meta information.
+   ------------------------------ */
+.site-footer { margin-top:24px; border-top:1px solid var(--border); background: rgba(5,12,22,0.88); backdrop-filter: blur(14px); }
+.site-footer-inner { width: min(1160px, calc(100% - 32px)); margin:0 auto; padding:28px 0 20px; display:grid; gap:22px; }
+.footer-brand { display:flex; align-items:center; gap:14px; }
+.footer-brand h2 { margin:0 0 4px; font-size:1.1rem; }
+.footer-brand p { margin:0; color:var(--muted); }
+.footer-grid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:16px; }
+.footer-grid h3 { margin:0 0 10px; font-size:0.96rem; }
+.footer-grid a { display:block; color:var(--muted); padding:6px 0; }
+.footer-grid a:hover, .footer-socials a:hover { color: var(--text); }
+.footer-meta { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; padding-top:12px; border-top:1px solid rgba(255,255,255,0.08); color:var(--muted); }
+.footer-meta p { margin:0; }
+.footer-socials { display:flex; gap:12px; flex-wrap:wrap; }
+.footer-socials a { color:var(--muted); }
+
+
+/* ------------------------------
+   14) Modals / Overlays
+   Full-screen overlays and centered modal bodies.
+   ------------------------------ */
+.modal { position: fixed; inset:0; background: rgba(2,8,18,0.72); backdrop-filter: blur(10px); display:grid; place-items:center; padding:20px; z-index:40; }
+.modal-body { width: min(100%, 560px); padding:24px; border-radius:26px; }
+.modal-title { margin: 0 0 18px; }
+.modal-body input, .modal-body select { margin-top:4px; }
+
+.table-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.page-header { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:18px; }
+.page-header h1, .page-header h2 { margin:0; }
+
+
+/* ------------------------------
+   15) Responsive tweaks
+   Keep mobile layout changes here for easy scanning.
+   ------------------------------ */
+@media (max-width: 768px) {
+	.topbar-inner, .page-header, .hero-actions { flex-direction: column; align-items: stretch; }
+	.nav-actions { justify-content: flex-start; }
+	.page { width: min(100% - 20px, 1160px); padding-top: 16px; }
+	.hero-card, .auth-card, .table-card, .panel, .modal-body { border-radius: 20px; padding: 18px; }
+	.landing-hero, .grid-3, .grid-2, .showcase-band { grid-template-columns: 1fr; }
+	.footer-grid, .footer-meta { grid-template-columns: 1fr; flex-direction: column; align-items: flex-start; }
+}
+
+
+.site-footer {
+	margin-top: 24px;
+	border-top: 1px solid var(--border);
+	background: rgba(5, 12, 22, 0.88);
+	backdrop-filter: blur(14px);
+}
+
+.site-footer-inner {
+	width: min(1160px, calc(100% - 32px));
+	margin: 0 auto;
+	padding: 28px 0 20px;
+	display: grid;
+	gap: 22px;
+}
+
+.footer-brand {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+
+.footer-brand h2 {
+	margin: 0 0 4px;
+	font-size: 1.1rem;
+}
+
+.footer-brand p {
+	margin: 0;
+	color: var(--muted);
+}
+
+.footer-grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 16px;
+}
+
+.footer-grid h3 {
+	margin: 0 0 10px;
+	font-size: 0.96rem;
+}
+
+.footer-grid a {
+	display: block;
+	color: var(--muted);
+	padding: 6px 0;
+}
+
+.footer-grid a:hover,
+.footer-socials a:hover {
+	color: var(--text);
+}
+
+.footer-meta {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 14px;
+	flex-wrap: wrap;
+	padding-top: 12px;
+	border-top: 1px solid rgba(255, 255, 255, 0.08);
+	color: var(--muted);
+}
+
+.footer-meta p {
+	margin: 0;
+}
+
+.footer-socials {
+	display: flex;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.footer-socials a {
+	color: var(--muted);
+}
+
+.table-card,
+.panel,
+.auth-card {
+	border-radius: 24px;
+	padding: 22px;
+}
+
+.table-card {
+	overflow: hidden;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+th,
+td {
+	padding: 14px 12px;
+	text-align: left;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+th {
+	color: var(--muted);
+	font-size: 0.84rem;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+}
+
+tbody tr:hover {
+	background: rgba(255, 255, 255, 0.03);
+}
+
+.tag {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 12px;
+	border-radius: 999px;
+	font-size: 0.88rem;
+	font-weight: 700;
+}
+
+.tag-success {
+	color: #052014;
+	background: linear-gradient(135deg, #7df0b4, #47d18a);
+}
+
+.tag-warn {
+	color: #2e1b00;
+	background: linear-gradient(135deg, #ffd36a, #ffb84d);
+}
+
+.tag-danger {
+	color: #2a0000;
+	background: linear-gradient(135deg, #ff9e9e, #ff6b6b);
+}
+
+.auth-wrap {
+	min-height: calc(100vh - 88px);
+	display: grid;
+	place-items: center;
+	padding: 28px 0 40px;
+}
+
+.auth-card {
+	width: min(100%, 460px);
+}
+
+.auth-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 16px;
+	padding: 8px 12px;
+	border-radius: 999px;
+	color: var(--muted);
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.form-grid {
+	display: grid;
+	gap: 14px;
+}
+
+.form-field {
+	display: grid;
+	gap: 8px;
+}
+
+.form-field label {
+	color: #d9e5f7;
+	font-size: 0.92rem;
+	font-weight: 700;
+}
+
+input,
+select {
+	width: 100%;
+	padding: 13px 14px;
+	border-radius: 14px;
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	color: var(--text);
+	background: rgba(255, 255, 255, 0.04);
+	outline: none;
+	transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+input:focus,
+select:focus {
+	border-color: rgba(38, 208, 206, 0.7);
+	box-shadow: 0 0 0 4px rgba(38, 208, 206, 0.16);
+	background: rgba(255, 255, 255, 0.06);
+}
+
+/* Role select styling: light blue background for better visibility */
+.role-select {
+	background: linear-gradient(180deg, #718a96 0%, #a0bed1 100%);
+	color: #022033;
+	border-color: rgba(2, 32, 51, 0.12);
+}
+.role-select:focus {
+	border-color: rgba(38, 208, 206, 0.7);
+	box-shadow: 0 0 0 4px rgba(38, 208, 206, 0.12);
+}
+.role-select option {
+	background: #9db6c2;
+	color: #022033;
+}
+
+.error-banner {
+	padding: 12px 14px;
+	border-radius: 14px;
+	color: #ffd6d6;
+	background: rgba(255, 107, 107, 0.14);
+	border: 1px solid rgba(255, 107, 107, 0.25);
+}
+
+.success-banner {
+	padding: 12px 14px;
+	border-radius: 14px;
+	color: #d4ffe8;
+	background: rgba(78, 229, 155, 0.14);
+	border: 1px solid rgba(78, 229, 155, 0.25);
+}
+
+.empty-state,
+.loading-state {
+	padding: 24px;
+	text-align: center;
+	color: var(--muted);
+	border-radius: 20px;
+	border: 1px dashed rgba(255, 255, 255, 0.15);
+	background: rgba(255, 255, 255, 0.03);
+}
+
+.modal {
+	position: fixed;
+	inset: 0;
+	background: rgba(2, 8, 18, 0.72);
+	backdrop-filter: blur(10px);
+	display: grid;
+	place-items: center;
+	padding: 20px;
+	z-index: 40;
+}
+
+.modal-body {
+	width: min(100%, 560px);
+	padding: 24px;
+	border-radius: 26px;
+}
+
+.modal-title {
+	margin: 0 0 18px;
+}
+
+.modal-body input,
+.modal-body select {
+	margin-top: 4px;
+}
+
+/* Drawer panel used for quick product entry. */
+.drawer-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(2, 8, 18, 0.72);
+	backdrop-filter: blur(10px);
+	display: flex;
+	justify-content: flex-end;
+	padding: 18px;
+	z-index: 40;
+}
+
+.drawer-panel {
+	width: min(100%, 720px);
+	height: 100%;
+	overflow: auto;
+	background: linear-gradient(180deg, rgba(13, 23, 40, 0.98), rgba(8, 15, 28, 0.98));
+	border: 1px solid var(--border);
+	border-radius: 28px;
+	box-shadow: var(--shadow);
+	padding: 24px;
+	display: grid;
+	gap: 18px;
+}
+
+.drawer-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+}
+
+.drawer-grid {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.drawer-inline-input {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+}
+
+.drawer-inline-input > input {
+	flex: 1;
+}
+
+.supplier-card {
+	padding: 16px;
+	border-radius: 20px;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	background: rgba(255, 255, 255, 0.03);
+	gap: 12px;
+}
+
+.supplier-card-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.supplier-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
+}
+
+.supplier-actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.table-actions {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.page-header {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 16px;
+	margin-bottom: 18px;
+}
+
+.page-header h1,
+.page-header h2 {
+	margin: 0;
+}
+
+@media (max-width: 768px) {
+	.topbar-inner,
+	.page-header,
+	.hero-actions {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.nav-actions {
+		justify-content: flex-start;
+	}
+
+	.page {
+		width: min(100% - 20px, 1160px);
+		padding-top: 16px;
+	}
+
+	.hero-card,
+	.auth-card,
+	.table-card,
+	.panel,
+	.modal-body {
+		border-radius: 20px;
+		padding: 18px;
+	}
+
+	.drawer-overlay {
+		padding: 0;
+	}
+
+	.drawer-panel {
+		width: 100%;
+		border-radius: 0;
+		height: 100%;
+	}
+
+	.landing-hero,
+	.grid-3,
+	.grid-2,
+	.showcase-band {
+		grid-template-columns: 1fr;
+	}
+
+	.drawer-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.drawer-inline-input {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.footer-grid,
+	.footer-meta {
+		grid-template-columns: 1fr;
+		flex-direction: column;
+		align-items: flex-start;
+	}
+}
