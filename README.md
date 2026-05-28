@@ -33,3 +33,8 @@ Production checklist:
 - Start backend with `NODE_ENV=production node src/server.js` or a process manager (PM2/systemd/container).
 - Ensure `CORS_ORIGIN` and `API_BASE_URL` are set to production domains.
 - Rotate and secure `JWT_SECRET` and any third-party API credentials.
+
+Vercel deployment:
+- Import the repository root into Vercel.
+- Set `VITE_API_URL` to the deployed backend API base URL, not the Vercel frontend URL.
+- The root `vercel.json` builds the frontend from `frontend/` and serves the SPA from `frontend/dist`.
