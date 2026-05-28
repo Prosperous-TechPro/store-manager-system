@@ -3,6 +3,9 @@ import api from '../services/api'
 import ProductForm from '../components/ProductForm'
 
 const Products = () => {
+  const user = JSON.parse(localStorage.getItem('user') || 'null')
+  const canManageProducts = ['manager', 'owner'].includes(user?.role)
+  const canDeleteProducts = user?.role === 'owner'
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -42,7 +45,11 @@ const Products = () => {
           <p className="hero-subtitle">Add, review, and maintain your store catalogue in one clean view.</p>
         </div>
         <div className="section-actions">
-          <button className="button-primary" onClick={onCreate}>Add Product</button>
+          {canManageProducts ? (
+            <button className="button-primary" onClick={onCreate}>Add Product</button>
+          ) : (
+            <span className="nav-chip">Read only</span>
+          )}
         </div>
       </section>
 
@@ -62,8 +69,8 @@ const Products = () => {
                     <td>{p.supplier_name || '-'}</td>
                     <td>
                       <div className="table-actions">
-                        <button className="button-secondary" onClick={()=>onEdit(p)}>Edit</button>
-                        <button className="button-danger" onClick={()=>onDelete(p.id)}>Delete</button>
+                        {canManageProducts && <button className="button-secondary" onClick={()=>onEdit(p)}>Edit</button>}
+                        {canDeleteProducts && <button className="button-danger" onClick={()=>onDelete(p.id)}>Delete</button>}
                       </div>
                     </td>
                   </tr>
@@ -76,7 +83,7 @@ const Products = () => {
         )}
       </div>
 
-      {showForm && (
+      {showForm && canManageProducts && (
         <ProductForm product={editing} onClose={()=>{setShowForm(false); setEditing(null)}} onSaved={()=>{setShowForm(false); load()}} />
       )}
     </div>

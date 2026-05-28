@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
+const db = require('../models/db');
 
-const authenticate = (req, res, next) => {
+const authenticate = async (req, res, next) => {
   const auth = req.headers.authorization;
   if (!auth) return res.status(401).json({ error: 'Missing token' });
   const parts = auth.split(' ');
@@ -8,7 +9,10 @@ const authenticate = (req, res, next) => {
   const token = parts[1];
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = payload;
+    const result = await db.query('SELECT id, role, deleted_at FROM users WHERE id=$1', [payload.id]);
+    const user = result.rows[0];
+    if (!user || user.deleted_at) return res.status(401).json({ error: 'Account is no longer active' });
+    req.user = { id: user.id, role: user.role };
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Invalid token' });

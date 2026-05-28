@@ -64,9 +64,13 @@ const generateAndSendCode = async (phone, purpose = 'verification') => {
 };
 
 // Internal helper: verify a code for a phone; returns true if ok
-const verifyCodeInternal = async (phone, code) => {
+const verifyCodeInternal = async (phone, code, purpose = null) => {
   const normalizedPhone = normalizePhone(phone);
-  const q = await db.query('SELECT * FROM sms_verifications WHERE phone=$1 ORDER BY created_at DESC LIMIT 1', [normalizedPhone]);
+  const queryText = purpose
+    ? 'SELECT * FROM sms_verifications WHERE phone=$1 AND purpose=$2 ORDER BY created_at DESC LIMIT 1'
+    : 'SELECT * FROM sms_verifications WHERE phone=$1 ORDER BY created_at DESC LIMIT 1';
+  const queryParams = purpose ? [normalizedPhone, purpose] : [normalizedPhone];
+  const q = await db.query(queryText, queryParams);
   const row = q.rows[0];
   if (!row) return { ok: false, reason: 'no_code' };
   if (row.verified) return { ok: false, reason: 'already_verified' };
@@ -95,10 +99,10 @@ const sendVerification = async (req, res) => {
 };
 
 const verifyCode = async (req, res) => {
-  const { phone, code } = req.body;
+  const { phone, code, purpose } = req.body;
   if (!phone || !code) return res.status(400).json({ error: 'Phone and code required' });
   try {
-    const r = await verifyCodeInternal(phone, code);
+    const r = await verifyCodeInternal(phone, code, purpose || 'verification');
     if (!r.ok) return res.status(400).json({ error: r.reason || 'Invalid' });
     res.json({ ok: true });
   } catch (err) {

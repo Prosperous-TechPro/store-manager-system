@@ -114,6 +114,23 @@ button:disabled { cursor: not-allowed; opacity: 0.7; transform: none; }
 .nav-links a, .nav-actions a, .nav-chip { padding: 10px 14px; border-radius: 999px; color: var(--muted); border: 1px solid transparent; }
 .nav-links a:hover, .nav-actions a:hover { color: var(--text); border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); }
 .nav-links a.active { color: var(--text); background: linear-gradient(135deg, rgba(38, 208, 206, 0.18), rgba(106, 133, 255, 0.18)); border-color: rgba(38, 208, 206, 0.24); }
+.nav-account-card {
+	display: grid;
+	gap: 2px;
+	min-width: 170px;
+	padding: 10px 14px;
+	border-radius: 18px;
+	border: 1px solid rgba(38, 208, 206, 0.22);
+	background: linear-gradient(135deg, #e7f7ff, #b9e3ff);
+	color: #022033;
+	box-shadow: 0 10px 24px rgba(38, 208, 206, 0.12);
+	text-align: left;
+}
+.nav-account-card:hover { color: #022033; background: linear-gradient(135deg, #effbff, #c8ebff); border-color: rgba(38, 208, 206, 0.34); }
+.nav-account-card span { display: block; line-height: 1.05; }
+.nav-account-label { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; opacity: 0.82; }
+.nav-account-name { font-size: 0.98rem; font-weight: 800; }
+.nav-account-role { font-size: 0.82rem; font-weight: 700; opacity: 0.92; }
 
 
 /* ------------------------------
@@ -202,6 +219,28 @@ button:disabled { cursor: not-allowed; opacity: 0.7; transform: none; }
 .policy-list { margin:14px 0 0; padding-left:18px; color:var(--muted); display:grid; gap:10px; }
 .policy-check { display:flex; align-items:flex-start; gap:10px; color:var(--muted); font-size:0.92rem; }
 .policy-check input { width:18px; height:18px; margin-top:2px; }
+.auth-links { display:flex; flex-wrap:wrap; gap:14px; margin-top: 6px; }
+.auth-links a { color: var(--accent-strong); font-weight: 600; text-decoration: none; }
+.auth-links a:hover { text-decoration: underline; }
+.password-field { display:flex; align-items:stretch; gap:10px; }
+.password-field input { flex:1; }
+.password-toggle { min-width: 74px; border-radius: 14px; border: 1px solid var(--border); background: rgba(255,255,255,0.06); color: var(--text); font-weight: 700; }
+.password-toggle:hover:not(:disabled) { background: rgba(255,255,255,0.1); }
+
+.account-grid { display: grid; gap: 14px; }
+.account-summary {
+	display: grid;
+	gap: 8px;
+	width: 100%;
+	text-align: left;
+	padding: 16px 18px;
+	border-radius: 18px;
+	border: 1px solid rgba(255,255,255,0.12);
+	background: linear-gradient(135deg, #e7f7ff, #b9e3ff);
+	color: #022033;
+	font-weight: 800;
+}
+.account-summary span { display: block; }
 
 .auth-wrap { min-height: calc(100vh - 88px); display:grid; place-items:center; padding:28px 0 40px; }
 .auth-card { width: min(100%, 460px); }
@@ -239,6 +278,7 @@ tbody tr:hover { background: rgba(255,255,255,0.03); }
 .tag-success { color:#052014; background: linear-gradient(135deg, #7df0b4, #47d18a); }
 .tag-warn { color:#2e1b00; background: linear-gradient(135deg, #ffd36a, #ffb84d); }
 .tag-danger { color:#2a0000; background: linear-gradient(135deg, #ff9e9e, #ff6b6b); }
+.tag-role { color:#022033; background: linear-gradient(135deg, #e7f7ff, #b9e3ff); }
 
 
 /* ------------------------------

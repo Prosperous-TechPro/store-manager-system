@@ -2,7 +2,11 @@ import React, { useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
+import VerifyAccount from './pages/VerifyAccount'
+import ForgotPassword from './pages/ForgotPassword'
+import Account from './pages/Account'
 import Dashboard from './pages/Dashboard'
+import Records from './pages/Records'
 import Products from './pages/Products'
 import Policy from './pages/Policy'
 import Documentation from './pages/Documentation'
@@ -14,6 +18,8 @@ import Footer from './components/Footer'
 
 const App = () => {
   const token = localStorage.getItem('token')
+  const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
+  const canViewManagement = ['manager', 'owner', 'admin'].includes(currentUser?.role)
   const location = useLocation()
 
   useEffect(() => {
@@ -31,13 +37,17 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/verify-account" element={<VerifyAccount />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/account" element={token ? <Account /> : <Navigate to="/login" />} />
         <Route path="/policy" element={<Policy />} />
         <Route path="/documentation" element={<Documentation />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route path="/cookie-policy" element={<CookiePolicy />} />
-        <Route path="/dashboard" element={token ? <Dashboard /> : <Navigate to="/login" />} />
+        <Route path="/dashboard" element={token ? (canViewManagement ? <Dashboard /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
         <Route path="/products" element={token ? <Products /> : <Navigate to="/login" />} />
+        <Route path="/records" element={token ? (canViewManagement ? <Records /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       <Footer />

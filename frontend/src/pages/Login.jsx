@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 
 const Login = () => {
+  const navigate = useNavigate()
   const [mode, setMode] = useState('login')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -14,6 +15,8 @@ const Login = () => {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const submit = async (e) => {
     e.preventDefault()
@@ -22,7 +25,8 @@ const Login = () => {
     if (mode === 'login') {
       if (!email || !password) return setError('Email and password are required')
     } else {
-      if (!name || !email || !password) return setError('Name, email, and password are required')
+      if (!name || !email || !password || !phone) return setError('Name, email, password, and phone are required')
+      if (password.length < 8) return setError('Password must be at least 8 characters long')
       if (password !== confirmPassword) return setError('Passwords do not match')
       if (!policyAccepted) return setError('Please accept the store policy to continue')
     }
@@ -34,14 +38,20 @@ const Login = () => {
         localStorage.setItem('user', JSON.stringify(body.user))
         window.location.href = '/dashboard'
       } else {
-        await api.post('/auth/register', { name, email, password, phone: phone.trim() || undefined, role })
-        setSuccess('Account created successfully. You can now sign in.')
-        setMode('login')
-        setPassword('')
-        setConfirmPassword('')
-        setPolicyAccepted(false)
+        const normalizedPhone = phone.trim()
+        if (!normalizedPhone) {
+          setError('Phone number is required for OTP verification')
+          return
+        }
+        await api.post('/auth/register', { name, email, password, phone: normalizedPhone, role })
+        navigate(`/verify-account?phone=${encodeURIComponent(normalizedPhone)}&email=${encodeURIComponent(email)}`)
+        return
       }
     } catch (err) {
+      if (mode === 'login' && err.status === 403 && err.data?.verification_required) {
+        navigate(`/verify-account?phone=${encodeURIComponent(err.data.phone || '')}&email=${encodeURIComponent(err.data.email || email)}`)
+        return
+      }
       setError(err.message || (mode === 'login' ? 'Login failed' : 'Account creation failed'))
     } finally {
       setLoading(false)
@@ -71,16 +81,27 @@ const Login = () => {
           </div>
           <div className="form-field">
             <label>Password</label>
-            <input type="password" value={password} onChange={(e)=>setPassword(e.target.value)} disabled={loading} />
+            <div className="password-field">
+              <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e)=>setPassword(e.target.value)} disabled={loading} minLength={8} />
+              <button type="button" className="password-toggle" onClick={() => setShowPassword((value) => !value)} disabled={loading} aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                    {showPassword ? '🙈' : '👁'}
+              </button>
+            </div>
+            <div className="helper-text">Password must be 8 characters or more.</div>
           </div>
           {mode === 'register' && (
             <>
               <div className="form-field">
                 <label>Confirm password</label>
-                <input type="password" value={confirmPassword} onChange={(e)=>setConfirmPassword(e.target.value)} disabled={loading} />
+                <div className="password-field">
+                  <input type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e)=>setConfirmPassword(e.target.value)} disabled={loading} minLength={8} />
+                  <button type="button" className="password-toggle" onClick={() => setShowConfirmPassword((value) => !value)} disabled={loading} aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}>
+                    {showConfirmPassword ? '🙈' : '👁'}
+                  </button>
+                </div>
               </div>
               <div className="form-field">
-                <label>Phone number <span className="helper-text">Optional</span></label>
+                <label>Phone number <span className="helper-text">Required for OTP verification</span></label>
                 <input value={phone} onChange={(e)=>setPhone(e.target.value)} disabled={loading} />
               </div>
               <div className="form-field">
@@ -88,6 +109,7 @@ const Login = () => {
                 <select className="role-select" value={role} onChange={(e)=>setRole(e.target.value)} disabled={loading}>
                   <option value="casher">Cashier</option>
                   <option value="manager">Manager</option>
+                  <option value="admin">Admin</option>
                   <option value="saler">Sales Associate</option>
                   <option value="owner">Owner</option>
                 </select>
@@ -116,6 +138,11 @@ const Login = () => {
               {mode === 'login' ? 'Create account' : 'Back to login'}
             </button>
           </div>
+          {mode === 'login' && (
+            <div className="auth-links">
+              <Link to="/forgot-password">Forgot password?</Link>
+            </div>
+          )}
           {mode === 'register' && (
             <label className="policy-check">
               <input

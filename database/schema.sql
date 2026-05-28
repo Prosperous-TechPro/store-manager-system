@@ -6,8 +6,11 @@ CREATE TABLE users (
   email TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'cashier',
-  phone TEXT,
+  phone TEXT UNIQUE,
   phone_verified BOOLEAN DEFAULT FALSE,
+  deleted_at TIMESTAMP,
+  deleted_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  delete_reason TEXT,
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -74,6 +77,19 @@ CREATE TABLE sms_verifications (
   expires_at TIMESTAMP NOT NULL,
   verified BOOLEAN DEFAULT FALSE,
   attempts INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE account_update_requests (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT,
+  password_hash TEXT,
+  otp_phone TEXT NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  verified BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT NOW()
 );
 
