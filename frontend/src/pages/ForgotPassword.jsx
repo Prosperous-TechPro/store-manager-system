@@ -40,7 +40,13 @@ const ForgotPassword = () => {
     if (newPassword !== confirmPassword) return setError('Passwords do not match')
     setLoading(true)
     try {
-      await api.post('/auth/reset-password', { email, code, newPassword })
+      const body = await api.post('/auth/reset-password', { email, code, newPassword })
+      if (body?.token && body?.user) {
+        localStorage.setItem('token', body.token)
+        localStorage.setItem('user', JSON.stringify(body.user))
+        window.location.href = '/dashboard'
+        return
+      }
       setMessage('Password updated successfully. You can sign in now.')
       setStep('done')
     } catch (err) {

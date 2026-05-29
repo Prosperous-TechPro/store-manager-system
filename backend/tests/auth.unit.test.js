@@ -135,6 +135,29 @@ describe('authController.unit', ()=>{
     expect(sms.verifyCodeInternal).toHaveBeenCalledWith('+233244567890', '123456', 'profile_update')
   })
 
+  test('resetPassword: updates password and returns a login session', async ()=>{
+    const currentHash = bcrypt.hashSync('OldPass123!', 10)
+    db.query.mockImplementation((text, params)=>{
+      if (text.startsWith('SELECT id,name,email,role,phone,deleted_at FROM users WHERE lower(email)=lower($1)')) {
+        return Promise.resolve({ rows: [{ id: 1, name: 'Sam', email: 's@e.com', role: 'manager', phone: '+233241234567', deleted_at: null }] })
+      }
+      if (text.startsWith('UPDATE users SET password=$1 WHERE id=$2')) {
+        return Promise.resolve({ rows: [{ id: 1, name: 'Sam', email: 's@e.com', role: 'manager', phone: '+233241234567' }] })
+      }
+      return Promise.resolve({ rows: [] })
+    })
+    sms.verifyCodeInternal = jest.fn().mockResolvedValue({ ok:true })
+
+    const req = { body: { email: 's@e.com', code: '123456', newPassword: 'NewPass123!' } }
+    const res = makeRes()
+    await auth.resetPassword(req, res)
+
+    expect(res._body.ok).toBe(true)
+    expect(res._body.token).toBeTruthy()
+    expect(res._body.user).toMatchObject({ id: 1, name: 'Sam', email: 's@e.com', role: 'manager', phone: '+233241234567' })
+    expect(sms.verifyCodeInternal).toHaveBeenCalledWith('+233241234567', '123456', 'password_reset')
+  })
+
   test('updateMe: rejects profile edits without current password', async ()=>{
     const currentHash = bcrypt.hashSync('OldPass123!', 10)
     db.query.mockImplementation((text)=>{

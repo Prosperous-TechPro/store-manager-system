@@ -18,6 +18,20 @@ const normalizePhone = (phone) => {
   return raw;
 };
 
+const issueAuthSession = (user) => {
+  const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '8h' });
+  return {
+    token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone,
+    },
+  };
+};
+
 const isValidEmail = (email) => EMAIL_REGEX.test(String(email || '').trim());
 
 const isValidPhone = (phone) => GH_PHONE_REGEX.test(String(phone || '').trim().replace(/\s+/g, ''));
@@ -76,8 +90,8 @@ const login = async (req, res) => {
     if (user.deleted_at) return res.status(403).json({ error: 'Account has been deleted' });
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '8h' });
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+    const session = issueAuthSession(user);
+    res.json(session);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
@@ -96,11 +110,10 @@ const verifyPhone = async (req, res) => {
     const result = await db.query('SELECT id,name,email,role,phone FROM users WHERE phone=$1', [normalizedPhone]);
     const user = result.rows[0];
     if (!user) return res.status(404).json({ error: 'Account not found' });
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '8h' });
+    const session = issueAuthSession(user);
     res.json({
       ok: true,
-      token,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone },
+      ...session,
     });
   } catch (err) {
     console.error(err);
@@ -314,15 +327,20 @@ const resetPassword = async (req, res) => {
   if (String(newPassword).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters long' });
   try {
     const normalizedEmail = normalizeEmail(email);
-    const result = await db.query('SELECT id,email,phone FROM users WHERE lower(email)=lower($1)', [normalizedEmail]);
+    const result = await db.query('SELECT id,name,email,role,phone,deleted_at FROM users WHERE lower(email)=lower($1)', [normalizedEmail]);
     const user = result.rows[0];
     if (!user) return res.status(404).json({ error: 'Account not found' });
+    if (user.deleted_at) return res.status(403).json({ error: 'Account has been deleted' });
     if (!user.phone) return res.status(400).json({ error: 'No phone number available for this account' });
     const r = await sms.verifyCodeInternal(user.phone, code, 'password_reset');
     if (!r.ok) return res.status(400).json({ error: r.reason || 'Invalid code' });
     const hash = await bcrypt.hash(newPassword, 10);
     await db.query('UPDATE users SET password=$1 WHERE id=$2', [hash, user.id]);
-    res.json({ ok: true });
+    const session = issueAuthSession(user);
+    res.json({
+      ok: true,
+      ...session,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Reset password failed' });
