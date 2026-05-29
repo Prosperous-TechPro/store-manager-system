@@ -46,7 +46,7 @@ const Nav = ()=>{
           {canViewDashboard && <Link to="/dashboard">Dashboard</Link>}
           <Link to="/products">Products</Link>
           {canViewRecords && <Link to="/records">Records</Link>}
-          {canViewRequests && <Link to="/requests">Request</Link>}
+          {canViewRequests && <Link to="/requests">Request for approval</Link>}
           {canViewAlerts && <Link to="/alerts">Alerts</Link>}
         </div>
         <div className="nav-actions">

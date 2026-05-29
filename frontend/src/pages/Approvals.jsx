@@ -40,7 +40,7 @@ const Approvals = () => {
   return (
     <div className="page static-page">
       <section className="hero-card">
-        <div className="auth-badge">Request queue</div>
+        <div className="auth-badge">Request for approval</div>
         <h1 className="hero-title">Pending account requests</h1>
         <p className="hero-subtitle">CEO and manager accounts can approve new signups before they gain access to the site.</p>
       </section>
