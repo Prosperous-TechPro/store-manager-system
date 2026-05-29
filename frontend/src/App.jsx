@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
@@ -19,6 +19,7 @@ import Nav from './components/Nav'
 import Footer from './components/Footer'
 
 const App = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   const token = localStorage.getItem('token')
   const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
   const currentRole = currentUser?.role === 'owner' ? 'ceo' : currentUser?.role
@@ -37,8 +38,9 @@ const App = () => {
   }, [location])
 
   return (
-    <div>
-      <Nav />
+    <div className={`app-shell ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+      <Nav sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen((value) => !value)} />
+      <main className="app-main">
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
@@ -58,6 +60,7 @@ const App = () => {
         <Route path="/records" element={token ? (canViewManagement ? <Records /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
+      </main>
       <Footer />
     </div>
   )

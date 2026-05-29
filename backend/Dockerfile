@@ -1,10 +1,10 @@
-FROM node:18-alpine AS builder
+FROM cgr.dev/chainguard/node:latest AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
 COPY . .
 
-FROM node:18-alpine
+FROM cgr.dev/chainguard/node:latest
 WORKDIR /app
 COPY --from=builder /app .
 ENV NODE_ENV=production

@@ -17,7 +17,7 @@ Conventions
   1) CSS Variables
   2) Base / Reset
   3) Layout & Page containers
-  4) Topbar / Navigation / Brand
+  4) Sidebar / Navigation / Brand
   5) Buttons & Controls
   6) Cards / Panels / Common surfaces
   7) Landing & Showcases
