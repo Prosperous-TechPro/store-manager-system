@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import api from '../services/api'
+import useSyncRefresh from '../hooks/useSyncRefresh'
 
 const Approvals = () => {
   const [loading, setLoading] = useState(true)
@@ -18,7 +19,7 @@ const Approvals = () => {
     window.location.href = '/login'
   }
 
-  const loadPending = async () => {
+  const loadPending = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
@@ -46,11 +47,12 @@ const Approvals = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [canApprove])
 
   useEffect(() => {
     loadPending()
-  }, [])
+  }, [loadPending])
+  useSyncRefresh(loadPending)
 
   const approveUser = async (user) => {
     setError('')

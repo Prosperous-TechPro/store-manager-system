@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
+import useSyncRefresh from '../hooks/useSyncRefresh'
 
 const Account = () => {
   const [role, setRole] = useState('')
@@ -26,33 +27,32 @@ const Account = () => {
 
   const displayRole = role === 'owner' || role === 'ceo' ? 'CEO' : role || 'casher'
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true)
-      setError('')
-      try {
-        const user = await api.get('/auth/me')
-        setRole(user.role || '')
-        setForm(prev => ({
-          ...prev,
-          name: user.name || '',
-          email: user.email || '',
-          phone: user.phone || '',
-        }))
-        setInitialProfile({
-          name: user.name || '',
-          email: user.email || '',
-          phone: user.phone || '',
-        })
-      } catch (err) {
-        setError(err.message || 'Failed to load account')
-      } finally {
-        setLoading(false)
-      }
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const user = await api.get('/auth/me')
+      setRole(user.role || '')
+      setForm(prev => ({
+        ...prev,
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+      }))
+      setInitialProfile({
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+      })
+    } catch (err) {
+      setError(err.message || 'Failed to load account')
+    } finally {
+      setLoading(false)
     }
-
-    load()
   }, [])
+
+  useEffect(() => { load() }, [load])
+  useSyncRefresh(load)
 
   const change = (key, value) => setForm(prev => ({ ...prev, [key]: value }))
 

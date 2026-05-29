@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import api from '../services/api'
+import useSyncRefresh from '../hooks/useSyncRefresh'
 
 const Records = () => {
   const [users, setUsers] = useState([])
@@ -15,22 +16,21 @@ const Records = () => {
   const canDeleteUsers = ['manager', 'ceo', 'admin'].includes(currentRole)
   const canApproveUsers = ['manager', 'ceo'].includes(currentRole)
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true)
-      setError('')
-      try {
-        const data = await api.get('/users')
-        setUsers(Array.isArray(data) ? data : [])
-      } catch (err) {
-        setError(err.message || 'Failed to load user records')
-      } finally {
-        setLoading(false)
-      }
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const data = await api.get('/users')
+      setUsers(Array.isArray(data) ? data : [])
+    } catch (err) {
+      setError(err.message || 'Failed to load user records')
+    } finally {
+      setLoading(false)
     }
-
-    load()
   }, [])
+
+  useEffect(() => { load() }, [load])
+  useSyncRefresh(load)
 
   const refreshUsers = async () => {
     const data = await api.get('/users')

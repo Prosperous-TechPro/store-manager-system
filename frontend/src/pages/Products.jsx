@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import api from '../services/api'
 import ProductForm from '../components/ProductForm'
+import useSyncRefresh from '../hooks/useSyncRefresh'
 
 const Products = () => {
   const user = JSON.parse(localStorage.getItem('user') || 'null')
@@ -14,7 +15,7 @@ const Products = () => {
   const [searchInput, setSearchInput] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
 
-  const load = async ()=>{
+  const load = useCallback(async ()=>{
     setLoading(true)
     try{
       const data = await api.get('/products')
@@ -23,9 +24,10 @@ const Products = () => {
       console.error(e)
       alert('Failed to load products')
     }finally{setLoading(false)}
-  }
+  }, [])
 
-  useEffect(()=>{ load() }, [])
+  useEffect(()=>{ load() }, [load])
+  useSyncRefresh(load)
 
   const onCreate = ()=>{ setEditing(null); setShowForm(true) }
   const onEdit = (p)=>{ setEditing(p); setShowForm(true) }

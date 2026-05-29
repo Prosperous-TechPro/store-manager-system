@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
+import useSyncRefresh from '../hooks/useSyncRefresh'
 
 const Alerts = () => {
   const [loading, setLoading] = useState(true)
@@ -10,29 +11,28 @@ const Alerts = () => {
   const [salesAlerts, setSalesAlerts] = useState([])
   const [salesTotal, setSalesTotal] = useState(0)
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true)
-      setError('')
-      try {
-        const [sales, expiry, missing] = await Promise.all([
-          api.get('/sales/details'),
-          api.get('/reports/expiry'),
-          api.get('/reports/missing'),
-        ])
-        setSalesAlerts(Array.isArray(sales) ? sales : [])
-        setSalesTotal((Array.isArray(sales) ? sales : []).reduce((sum, s) => sum + Number.parseFloat(s.total_amount || 0), 0))
-        setExpiryAlerts(Array.isArray(expiry) ? expiry : [])
-        setMissingAlerts(Array.isArray(missing) ? missing : [])
-      } catch (err) {
-        setError(err.message || 'Failed to load alerts')
-      } finally {
-        setLoading(false)
-      }
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const [sales, expiry, missing] = await Promise.all([
+        api.get('/sales/details'),
+        api.get('/reports/expiry'),
+        api.get('/reports/missing'),
+      ])
+      setSalesAlerts(Array.isArray(sales) ? sales : [])
+      setSalesTotal((Array.isArray(sales) ? sales : []).reduce((sum, s) => sum + Number.parseFloat(s.total_amount || 0), 0))
+      setExpiryAlerts(Array.isArray(expiry) ? expiry : [])
+      setMissingAlerts(Array.isArray(missing) ? missing : [])
+    } catch (err) {
+      setError(err.message || 'Failed to load alerts')
+    } finally {
+      setLoading(false)
     }
-
-    load()
   }, [])
+
+  useEffect(() => { load() }, [load])
+  useSyncRefresh(load)
 
   const expiredItems = expiryAlerts.filter((it) => it.status === 'expired')
   const in3 = expiryAlerts.filter((it) => it.status === 'in_3_months')

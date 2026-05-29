@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
+import useSyncRefresh from '../hooks/useSyncRefresh'
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true)
@@ -15,30 +16,30 @@ const Dashboard = () => {
     { key: 'missing-products', label: 'Missing product alerts', value: metrics.missingProducts, theme: 'metric-accent' },
   ]
 
-  useEffect(()=>{
-    const load = async ()=>{
-      setLoading(true)
-      try{
-        const [products, sales, expiry, missing] = await Promise.all([
-          api.get('/products'),
-          api.get('/sales'),
-          api.get('/reports/expiry'),
-          api.get('/reports/missing'),
-        ])
-        const totalProducts = products.length
-        const totalQuantity = products.reduce((s,p)=>s + (p.quantity||0), 0)
-        const lowStock = products.filter(p=> (p.reorder_level || 0) >= (p.quantity || 0)).length
-        const salesTotal = sales.reduce((s,x)=> s + parseFloat(x.total_amount || 0), 0)
-        const transactions = sales.length
-        const expiredProducts = Array.isArray(expiry) ? expiry.filter((item) => item.status === 'expired').length : 0
-        const missingProducts = Array.isArray(missing) ? missing.length : 0
-        setMetrics({ totalProducts, totalQuantity, lowStock, salesTotal, transactions, expiredProducts, missingProducts })
-      }catch(e){
-        console.error(e)
-      }finally{ setLoading(false) }
-    }
-    load()
+  const load = useCallback(async ()=>{
+    setLoading(true)
+    try{
+      const [products, sales, expiry, missing] = await Promise.all([
+        api.get('/products'),
+        api.get('/sales'),
+        api.get('/reports/expiry'),
+        api.get('/reports/missing'),
+      ])
+      const totalProducts = products.length
+      const totalQuantity = products.reduce((s,p)=>s + (p.quantity||0), 0)
+      const lowStock = products.filter(p=> (p.reorder_level || 0) >= (p.quantity || 0)).length
+      const salesTotal = sales.reduce((s,x)=> s + parseFloat(x.total_amount || 0), 0)
+      const transactions = sales.length
+      const expiredProducts = Array.isArray(expiry) ? expiry.filter((item) => item.status === 'expired').length : 0
+      const missingProducts = Array.isArray(missing) ? missing.length : 0
+      setMetrics({ totalProducts, totalQuantity, lowStock, salesTotal, transactions, expiredProducts, missingProducts })
+    }catch(e){
+      console.error(e)
+    }finally{ setLoading(false) }
   },[])
+
+  useEffect(()=>{ load() },[load])
+  useSyncRefresh(load)
 
   if (loading) return <div style={{padding:20}}>Loading dashboard...</div>
 
