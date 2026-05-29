@@ -10,6 +10,14 @@ const Approvals = () => {
   const currentRole = currentUser?.role === 'owner' ? 'ceo' : currentUser?.role
   const canApprove = ['manager', 'ceo'].includes(currentRole)
 
+  const signOutForInvalidSession = (message) => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    setUsers([])
+    setError(message || 'Your session expired. Please sign in again.')
+    window.location.href = '/login'
+  }
+
   const loadPending = async () => {
     setLoading(true)
     setError('')
@@ -30,6 +38,10 @@ const Approvals = () => {
       setUsers(Array.isArray(data) ? data : [])
     } catch (err) {
       const msg = err?.data?.error || err?.message || 'Failed to load approval requests'
+      if (/invalid token|missing token/i.test(msg)) {
+        signOutForInvalidSession('Your session expired. Please sign in again to view approval requests.')
+        return
+      }
       setError(msg)
     } finally {
       setLoading(false)
@@ -47,7 +59,12 @@ const Approvals = () => {
       await api.post(`/users/${user.id}/approve`)
       await loadPending()
     } catch (err) {
-      setError(err.message || 'Failed to approve user')
+      const msg = err?.data?.error || err?.message || 'Failed to approve user'
+      if (/invalid token|missing token/i.test(msg)) {
+        signOutForInvalidSession('Your session expired. Please sign in again to approve requests.')
+        return
+      }
+      setError(msg)
     } finally {
       setApprovingId(null)
     }
@@ -66,8 +83,9 @@ const Approvals = () => {
       ) : error ? (
         <div className="error-banner">{error}</div>
       ) : users.length ? (
-        <div className="table-card">
-          <table>
+        <div className="approval-layout">
+          <div className="approval-table table-card">
+            <table>
             <thead>
               <tr>
                 <th>Name</th>
@@ -100,7 +118,47 @@ const Approvals = () => {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
+
+          <div className="approval-list">
+            {users.map((user) => (
+              <article key={`card-${user.id}`} className="approval-card panel">
+                <div className="approval-card-head">
+                  <div>
+                    <h2 className="approval-card-title">{user.name}</h2>
+                    <p className="section-note">{user.email}</p>
+                  </div>
+                  <span className="tag tag-role">Role: {user.role}</span>
+                </div>
+
+                <div className="approval-card-body">
+                  <div>
+                    <span className="approval-label">Phone</span>
+                    <div>{user.phone || '-'}</div>
+                  </div>
+                  <div>
+                    <span className="approval-label">Phone verified</span>
+                    <div>{user.phone_verified ? <span className="tag tag-success">Yes</span> : <span className="tag tag-warn">No</span>}</div>
+                  </div>
+                  <div>
+                    <span className="approval-label">Requested</span>
+                    <div>{user.created_at ? new Date(user.created_at).toLocaleString() : '-'}</div>
+                  </div>
+                </div>
+
+                <div className="approval-card-actions">
+                  {canApprove ? (
+                    <button className="button-primary" onClick={() => approveUser(user)} disabled={approvingId === user.id}>
+                      {approvingId === user.id ? 'Approving...' : 'Approve request'}
+                    </button>
+                  ) : (
+                    <span className="section-note">Insufficient privileges</span>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       ) : (
         <div className="panel">
