@@ -63,6 +63,10 @@ const Nav = ({ sidebarOpen, onToggleSidebar })=>{
             <span>Inventory control</span>
           </span>
         </Link>
+        <div className="nav-links nav-center" role="navigation" aria-label="Topbar actions">
+          <Link to="/products" className="nav-pill" onClick={closeSidebar}>Explore products</Link>
+          <Link to="/policy" className="nav-pill" onClick={closeSidebar}>View policy</Link>
+        </div>
       </header>
 
       <div className={`sidebar-overlay ${sidebarOpen ? 'is-visible' : ''}`} onClick={onToggleSidebar} aria-hidden="true" />
