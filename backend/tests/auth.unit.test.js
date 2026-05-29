@@ -216,6 +216,6 @@ describe('authController.unit', ()=>{
     await auth.updateMe(req, res)
 
     expect(res._status).toBe(400)
-    expect(res._body).toMatchObject({ error: 'Current password is required to confirm account changes' })
+    expect(res._body).toMatchObject({ error: 'Current password is required to confirm name or password changes' })
   })
 })
