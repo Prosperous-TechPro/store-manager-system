@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 
 const sms = require('./smsController');
 
-const ALLOWED_ROLES = new Set(['casher', 'manager', 'saler', 'owner', 'admin']);
+const ALLOWED_ROLES = new Set(['casher', 'manager', 'saler', 'ceo', 'admin']);
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GH_PHONE_REGEX = /^(?:\+233|0)\d{9}$/;
 
@@ -18,6 +18,11 @@ const normalizePhone = (phone) => {
   return raw;
 };
 
+const normalizeRole = (role) => {
+  const value = String(role || '').trim().toLowerCase();
+  return value === 'owner' ? 'ceo' : value;
+};
+
 const issueAuthSession = (user) => {
   const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '8h' });
   return {
@@ -26,7 +31,7 @@ const issueAuthSession = (user) => {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role,
+      role: normalizeRole(user.role),
       phone: user.phone,
     },
   };
@@ -40,7 +45,7 @@ const register = async (req, res) => {
   const { name, email, password, role = 'casher', phone } = req.body;
   if (!name || !email || !password || !phone) return res.status(400).json({ error: 'Name, email, password, and phone are required' });
   if (String(password).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters long' });
-  const normalizedRole = String(role || 'casher').toLowerCase();
+  const normalizedRole = normalizeRole(role || 'casher');
   const normalizedEmail = normalizeEmail(email);
   const normalizedPhone = normalizePhone(phone);
   if (!ALLOWED_ROLES.has(normalizedRole)) {

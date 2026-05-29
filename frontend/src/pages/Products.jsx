@@ -4,8 +4,9 @@ import ProductForm from '../components/ProductForm'
 
 const Products = () => {
   const user = JSON.parse(localStorage.getItem('user') || 'null')
-  const canManageProducts = ['manager', 'owner'].includes(user?.role)
-  const canDeleteProducts = user?.role === 'owner'
+  const role = user?.role === 'owner' ? 'ceo' : user?.role
+  const canManageProducts = ['manager', 'ceo'].includes(role)
+  const canDeleteProducts = role === 'ceo'
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)

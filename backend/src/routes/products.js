@@ -5,8 +5,8 @@ const { listProducts, getProduct, createProduct, updateProduct, deleteProduct } 
 
 router.get('/', authenticate, listProducts);
 router.get('/:id', authenticate, getProduct);
-router.post('/', authenticate, authorize(['manager','owner']), createProduct);
-router.put('/:id', authenticate, authorize(['manager','owner']), updateProduct);
-router.delete('/:id', authenticate, authorize(['owner']), deleteProduct);
+router.post('/', authenticate, authorize(['manager','ceo']), createProduct);
+router.put('/:id', authenticate, authorize(['manager','ceo']), updateProduct);
+router.delete('/:id', authenticate, authorize(['ceo']), deleteProduct);
 
 module.exports = router;

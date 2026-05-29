@@ -66,7 +66,7 @@ const Login = () => {
         <p className="hero-subtitle">
           {mode === 'login'
             ? 'Manage products, sales, and stock with a clean modern workspace.'
-            : 'Set up a store user account in seconds with Cashier, Manager, Sales Associate, or Owner access.'}
+            : 'Set up a store user account in seconds with Cashier, Manager, Sales Associate, or CEO access.'}
         </p>
         <form onSubmit={submit} className="form-grid" style={{ marginTop: 20 }}>
           {mode === 'register' && (
@@ -111,7 +111,7 @@ const Login = () => {
                   <option value="manager">Manager</option>
                   <option value="admin">Admin</option>
                   <option value="saler">Sales Associate</option>
-                  <option value="owner">Owner</option>
+                  <option value="ceo">CEO</option>
                 </select>
                 <div className="helper-text">Choose the role that matches the user’s job function and access level.</div>
               </div>

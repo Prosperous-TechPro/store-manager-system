@@ -16,7 +16,7 @@ const sections = [
       'Cashier accounts handle daily sales and front-desk work.',
       'Manager accounts should be limited to trusted supervisors.',
       'Sales Associate accounts are for sales entry and customer checkout.',
-      'Owner accounts should be limited to the business owner.',
+      'CEO accounts should be limited to the business owner or executive lead.',
       'Review access regularly to keep the store secure.',
     ],
   },

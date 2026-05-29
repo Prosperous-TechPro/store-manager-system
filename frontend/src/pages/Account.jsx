@@ -24,6 +24,8 @@ const Account = () => {
     confirmPassword: '',
   })
 
+  const displayRole = role === 'owner' || role === 'ceo' ? 'CEO' : role || 'casher'
+
   useEffect(() => {
     const load = async () => {
       setLoading(true)
@@ -214,7 +216,7 @@ const Account = () => {
             >
               <span>Full name: {form.name || '-'}</span>
               <span>Email: {form.email || '-'}</span>
-              <span>Role: {role || 'casher'}</span>
+              <span>Role: {displayRole}</span>
             </button>
 
             {showDetails && (
@@ -233,7 +235,7 @@ const Account = () => {
                 </div>
                 <div className="form-field">
                   <label>Role</label>
-                  <span className="tag tag-role" style={{ width: 'fit-content' }} title="Your role">Role: {role || 'casher'}</span>
+                  <span className="tag tag-role" style={{ width: 'fit-content' }} title="Your role">Role: {displayRole}</span>
                 </div>
                 <div className="form-field">
                   <label>Current password</label>

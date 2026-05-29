@@ -7,6 +7,7 @@ import ForgotPassword from './pages/ForgotPassword'
 import Account from './pages/Account'
 import Dashboard from './pages/Dashboard'
 import Records from './pages/Records'
+import Alerts from './pages/Alerts'
 import Products from './pages/Products'
 import Policy from './pages/Policy'
 import Documentation from './pages/Documentation'
@@ -19,7 +20,9 @@ import Footer from './components/Footer'
 const App = () => {
   const token = localStorage.getItem('token')
   const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
-  const canViewManagement = ['manager', 'owner', 'admin'].includes(currentUser?.role)
+  const currentRole = currentUser?.role === 'owner' ? 'ceo' : currentUser?.role
+  const canViewManagement = ['manager', 'ceo', 'admin'].includes(currentRole)
+  const canViewAlerts = ['manager', 'ceo', 'admin'].includes(currentRole)
   const location = useLocation()
 
   useEffect(() => {
@@ -46,6 +49,7 @@ const App = () => {
         <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route path="/cookie-policy" element={<CookiePolicy />} />
         <Route path="/dashboard" element={token ? (canViewManagement ? <Dashboard /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
+        <Route path="/alerts" element={token ? (canViewAlerts ? <Alerts /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
         <Route path="/products" element={token ? <Products /> : <Navigate to="/login" />} />
         <Route path="/records" element={token ? (canViewManagement ? <Records /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to="/" />} />

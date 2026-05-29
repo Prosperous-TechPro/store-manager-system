@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 const items = [
   'Users must provide accurate registration details and keep passwords secure.',
-  'Cashier access is for operational work; manager, sales associate, and owner access follow business approval.',
+  'Cashier access is for operational work; manager, sales associate, and CEO access follow business approval.',
   'Misuse of the platform, unauthorized access, or data tampering is prohibited.',
   'This template should be aligned with your company rules and any applicable Ghana laws before launch.',
 ]

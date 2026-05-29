@@ -9,8 +9,9 @@ const Records = () => {
   const [deleteReason, setDeleteReason] = useState('')
   const [deleting, setDeleting] = useState(false)
   const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
-  const canSeeDeleteReason = ['owner', 'admin'].includes(currentUser?.role)
-  const canDeleteUsers = ['manager', 'owner', 'admin'].includes(currentUser?.role)
+  const currentRole = currentUser?.role === 'owner' ? 'ceo' : currentUser?.role
+  const canSeeDeleteReason = ['ceo', 'admin'].includes(currentRole)
+  const canDeleteUsers = ['manager', 'ceo', 'admin'].includes(currentRole)
 
   useEffect(() => {
     const load = async () => {
@@ -71,7 +72,7 @@ const Records = () => {
         <div>
           <div className="auth-badge">Access records</div>
           <h1 className="hero-title" style={{ fontSize: '2.1rem', marginTop: 6 }}>Site Users</h1>
-          <p className="hero-subtitle">Manager and owner accounts can review people using the system and their verification status.</p>
+          <p className="hero-subtitle">CEO and manager accounts can review people using the system and their verification status.</p>
         </div>
       </section>
 

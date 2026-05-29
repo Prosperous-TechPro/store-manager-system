@@ -8,7 +8,7 @@ const policySections = [
       'Cashier accounts are for daily sales and stock tasks.',
       'Manager accounts are reserved for supervisors who handle operations.',
       'Sales Associate accounts handle frontline sales entry.',
-      'Owner accounts are reserved for business owners and full administration.',
+      'CEO accounts are reserved for business owners and full administration.',
       'Each user must keep their login details private.',
     ],
   },
@@ -17,7 +17,7 @@ const policySections = [
     items: [
       'Record sales honestly and complete transactions before closing the shift.',
       'Keep stock counts updated and report shortages immediately.',
-      'Follow opening and closing procedures approved by the store owner.',
+      'Follow opening and closing procedures approved by the store CEO.',
     ],
   },
   {
