@@ -6,6 +6,7 @@ import VerifyAccount from './pages/VerifyAccount'
 import ForgotPassword from './pages/ForgotPassword'
 import Account from './pages/Account'
 import Dashboard from './pages/Dashboard'
+import DashboardDetails from './pages/DashboardDetails'
 import Records from './pages/Records'
 import Alerts from './pages/Alerts'
 import Approvals from './pages/Approvals'
@@ -54,6 +55,7 @@ const App = () => {
         <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route path="/cookie-policy" element={<CookiePolicy />} />
         <Route path="/dashboard" element={token ? (canViewManagement ? <Dashboard /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
+        <Route path="/dashboard/:metricId" element={token ? (canViewManagement ? <DashboardDetails /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
         <Route path="/alerts" element={token ? (canViewAlerts ? <Alerts /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
         <Route path="/requests" element={token ? (canViewRequests ? <Approvals /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
         <Route path="/approvals" element={<Navigate to="/requests" replace />} />
