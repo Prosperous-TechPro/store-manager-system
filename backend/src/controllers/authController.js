@@ -84,22 +84,34 @@ const register = async (req, res) => {
     }
     const hash = await bcrypt.hash(password, 10);
     const approved = normalizedRole === 'ceo';
-    const result = await db.query(
-      'INSERT INTO users(name,email,password,role,phone,phone_verified,approved) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id,name,email,role,phone,phone_verified,approved',
-      [name, normalizedEmail, hash, normalizedRole, normalizedPhone, false, approved]
-    );
-    const user = result.rows[0];
+    const client = await db.pool.connect();
     try {
-      await sms.generateAndSendCode(normalizedPhone, 'signup');
-    } catch (e) {
-      console.warn('Failed to send signup SMS', e.message || e);
+      await client.query('BEGIN');
+      const result = await client.query(
+        'INSERT INTO users(name,email,password,role,phone,phone_verified,approved) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id,name,email,role,phone,phone_verified,approved',
+        [name, normalizedEmail, hash, normalizedRole, normalizedPhone, false, approved]
+      );
+      const user = result.rows[0];
+
+      const smsResult = await sms.generateAndSendCode(normalizedPhone, 'signup', { dbClient: client });
+      if (!smsResult.sent) {
+        throw new Error(smsResult.reused ? 'A verification code is already active for this phone' : 'Failed to send signup SMS');
+      }
+
+      await client.query('COMMIT');
+      return res.status(201).json({
+        ...user,
+        verification_required: true,
+        approval_required: !approved,
+        approval_required_by: !approved ? (normalizedRole === 'manager' ? 'ceo' : 'manager_or_ceo') : null,
+      });
+    } catch (sendErr) {
+      await client.query('ROLLBACK');
+      console.warn('Failed to send signup SMS', sendErr.message || sendErr);
+      return res.status(502).json({ error: 'We could not send the verification SMS. Account was not created.' });
+    } finally {
+      client.release();
     }
-    res.status(201).json({
-      ...user,
-      verification_required: true,
-      approval_required: !approved,
-      approval_required_by: !approved ? (normalizedRole === 'manager' ? 'ceo' : 'manager_or_ceo') : null,
-    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

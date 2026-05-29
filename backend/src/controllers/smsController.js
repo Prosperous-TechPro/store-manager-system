@@ -16,6 +16,11 @@ const getHubtelUrl = () => {
   return process.env.HUBTEL_API_URL || process.env.HUBTEL_SMS_BASE_URL || '';
 };
 
+const queryWithClient = async (client, text, params) => {
+  if (client) return client.query(text, params);
+  return db.query(text, params);
+};
+
 const getAuthHeader = () => {
   if (process.env.HUBTEL_API_KEY) return { Authorization: `Bearer ${process.env.HUBTEL_API_KEY}` };
   if (process.env.HUBTEL_BASIC_AUTH) {
@@ -33,13 +38,34 @@ const getAuthHeader = () => {
   return {};
 };
 
-// Internal helper: generate, store, and send code when Hubtel is configured.
-const generateAndSendCode = async (phone, purpose = 'verification') => {
+const getLatestCodeRecord = async (phone, purpose, dbClient = null) => {
   const normalizedPhone = normalizePhone(phone);
+  const q = await queryWithClient(
+    dbClient,
+    'SELECT id, verified, expires_at, created_at FROM sms_verifications WHERE phone=$1 AND purpose=$2 ORDER BY created_at DESC LIMIT 1',
+    [normalizedPhone, purpose]
+  );
+  return q.rows[0] || null;
+};
+
+// Internal helper: generate, store, and send code when Hubtel is configured.
+const generateAndSendCode = async (phone, purpose = 'verification', options = {}) => {
+  const { dbClient = null } = options;
+  const normalizedPhone = normalizePhone(phone);
+  const latestRecord = await getLatestCodeRecord(normalizedPhone, purpose, dbClient);
+  if (latestRecord && !latestRecord.verified && new Date(latestRecord.expires_at) > new Date()) {
+    return {
+      ok: true,
+      sent: false,
+      reused: true,
+      reason: 'existing_unexpired_code',
+    };
+  }
+
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   const hash = await bcrypt.hash(code, 10);
   const expires_at = new Date(Date.now() + SEND_EXPIRY_MINUTES * 60 * 1000);
-  await db.query('INSERT INTO sms_verifications(phone,code_hash,purpose,expires_at) VALUES($1,$2,$3,$4)', [normalizedPhone, hash, purpose, expires_at]);
+  await queryWithClient(dbClient, 'INSERT INTO sms_verifications(phone,code_hash,purpose,expires_at) VALUES($1,$2,$3,$4)', [normalizedPhone, hash, purpose, expires_at]);
 
   const message = `Your verification code is ${code}. It expires in ${SEND_EXPIRY_MINUTES} minutes.`;
 
@@ -114,6 +140,9 @@ const sendVerification = async (req, res) => {
   if (!phone) return res.status(400).json({ error: 'Phone required' });
   try {
     const result = await generateAndSendCode(phone, purpose);
+    if (result.reused) {
+      return res.json({ ok: true, message: 'A verification code is already active for this phone. Please wait for it to expire before requesting another SMS.' });
+    }
     if (result.sent === false) return res.json({ ok: true, message: 'Code generated (not sent, Hubtel URL not set)' });
     return res.json({ ok: true });
   } catch (err) {
