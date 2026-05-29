@@ -227,7 +227,7 @@ button:disabled { cursor: not-allowed; opacity: 0.7; transform: none; }
 .profile-role { font-size:0.68rem; opacity:0.78; }
 .profile-status { font-size:0.68rem; color: rgba(7,24,39,0.62); display:flex; align-items:center; gap:6px; }
 .status-dot { width:10px; height:10px; border-radius:50%; background:#cbd5e1; display:inline-block; }
-.status-dot.online { background: #10b981; box-shadow: 0 4px 14px rgba(16,185,129,0.18); }
+.status-dot.online { background: #4b615a; box-shadow: 0 4px 14px rgba(16,185,129,0.18); }
 .account-menu-item { display:block; padding:7px 10px; border-radius:8px; text-align:left; color:#071827; background:transparent; border:0; font-size:0.78rem; }
 .logout-button { padding:7px 10px; border-radius:10px; background:#ef4444; color:#fff; border:0; font-weight:700; box-shadow: 0 8px 18px rgba(239,68,68,0.14); width: 100%; font-size:0.78rem; }
 
@@ -600,8 +600,8 @@ tbody tr:hover {
 }
 
 .tag-success {
-	color: #052014;
-	background: linear-gradient(135deg, #7df0b4, #47d18a);
+	color: #ddf5ea;
+	background: linear-gradient(135deg, #2a2c2b, #555756);
 }
 
 .tag-warn {

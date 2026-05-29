@@ -1,0 +1,158 @@
+import React, { useEffect, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import api from '../services/api'
+
+const metricTitles = {
+  sales: 'Sales details',
+  expired: 'Expired product details',
+  missing: 'Missing product details',
+  in_3_months: 'Expiring in 3 months details',
+  in_2_months: 'Expiring in 2 months details',
+  in_1_month: 'Expiring in 1 month details',
+}
+
+const metricEmptyMessages = {
+  sales: 'No sales records found.',
+  expired: 'No expired products found.',
+  missing: 'No missing product reports found.',
+  in_3_months: 'No expiring items found.',
+  in_2_months: 'No expiring items found.',
+  in_1_month: 'No expiring items found.',
+}
+
+const AlertsDetails = () => {
+  const { metricId } = useParams()
+  const [loading, setLoading] = useState(true)
+  const [items, setItems] = useState([])
+  const [summary, setSummary] = useState('')
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      setError('')
+
+      try {
+        const [sales, expiry, missing] = await Promise.all([
+          api.get('/sales/details'),
+          api.get('/reports/expiry'),
+          api.get('/reports/missing'),
+        ])
+
+        const salesList = Array.isArray(sales) ? sales : []
+        const expiryList = Array.isArray(expiry) ? expiry : []
+        const missingList = Array.isArray(missing) ? missing : []
+        const expiredItems = expiryList.filter((item) => item.status === 'expired')
+        const in3 = expiryList.filter((item) => item.status === 'in_3_months')
+        const in2 = expiryList.filter((item) => item.status === 'in_2_months')
+        const in1 = expiryList.filter((item) => item.status === 'in_1_month')
+
+        switch (metricId) {
+          case 'sales':
+            setSummary(`There are ${salesList.length} sales transactions totaling ${salesList.reduce((sum, sale) => sum + Number.parseFloat(sale.total_amount || 0), 0).toFixed(2)}.`)
+            setItems(salesList.map((sale) => ({
+              key: sale.id,
+              label: sale.date ? new Date(sale.date).toLocaleString() : `Sale #${sale.id}`,
+              meta: `Cashier: ${sale.cashier_name || '-'} | Total amount: ${Number.parseFloat(sale.total_amount || 0).toFixed(2)}`,
+            })))
+            break
+          case 'expired':
+            setSummary(`There are ${expiredItems.length} expired products that should be removed from active stock.`)
+            setItems(expiredItems.map((item) => ({
+              key: item.id,
+              label: item.name,
+              meta: `${item.expiry_date ? `Expired on ${new Date(item.expiry_date).toLocaleDateString()}` : 'Expired item'} | Qty: ${item.quantity ?? '-'}`,
+            })))
+            break
+          case 'missing':
+            setSummary(`There are ${missingList.length} missing product alerts.`)
+            setItems(missingList.map((item) => ({
+              key: item.id,
+              label: item.product_name || 'Product',
+              meta: `Expected: ${item.expected ?? '-'} | Actual: ${item.actual ?? '-'} | Difference: ${item.difference ?? '-'}`,
+            })))
+            break
+          case 'in_3_months':
+            setSummary(`There are ${in3.length} items expiring in about 90 days.`)
+            setItems(in3.map((item) => ({
+              key: item.id,
+              label: item.name,
+              meta: item.expiry_date ? `Expires on ${new Date(item.expiry_date).toLocaleDateString()}` : 'Pending expiry date',
+            })))
+            break
+          case 'in_2_months':
+            setSummary(`There are ${in2.length} items expiring in about 60 days.`)
+            setItems(in2.map((item) => ({
+              key: item.id,
+              label: item.name,
+              meta: item.expiry_date ? `Expires on ${new Date(item.expiry_date).toLocaleDateString()}` : 'Pending expiry date',
+            })))
+            break
+          case 'in_1_month':
+            setSummary(`There are ${in1.length} items expiring in about 30 days.`)
+            setItems(in1.map((item) => ({
+              key: item.id,
+              label: item.name,
+              meta: item.expiry_date ? `Expires on ${new Date(item.expiry_date).toLocaleDateString()}` : 'Pending expiry date',
+            })))
+            break
+          default:
+            setError('That alert does not exist.')
+            setItems([])
+            setSummary('')
+        }
+      } catch (loadError) {
+        console.error(loadError)
+        setError('Failed to load alert details.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    load()
+  }, [metricId])
+
+  const title = metricTitles[metricId]
+  const emptyMessage = metricEmptyMessages[metricId]
+
+  return (
+    <div className="page static-page">
+      <section className="hero-card">
+        <div className="auth-badge">Alert details</div>
+        <div className="page-header">
+          <div>
+            <h1 className="hero-title">{title || 'Alert details'}</h1>
+            <p className="hero-subtitle">Detailed breakdown of the selected manager or CEO notification.</p>
+          </div>
+          <Link className="nav-chip nav-chip-link" to="/alerts">Back to alerts</Link>
+        </div>
+      </section>
+
+      <section className="panel">
+        {loading ? (
+          <p className="section-note">Loading alert details...</p>
+        ) : error ? (
+          <p className="section-note">{error}</p>
+        ) : (
+          <>
+            <p className="section-note" style={{ marginTop: 0 }}>{summary}</p>
+            {items.length ? (
+              <ul className="policy-list">
+                {items.map((item) => (
+                  <li key={item.key}>
+                    <strong>{item.label}</strong>
+                    <div className="section-note">{item.meta}</div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="section-note">{emptyMessage}</p>
+            )}
+          </>
+        )}
+      </section>
+    </div>
+  )
+}
+
+export default AlertsDetails

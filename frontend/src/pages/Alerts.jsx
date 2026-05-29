@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import api from '../services/api'
 
 const Alerts = () => {
@@ -8,7 +9,6 @@ const Alerts = () => {
   const [missingAlerts, setMissingAlerts] = useState([])
   const [salesAlerts, setSalesAlerts] = useState([])
   const [salesTotal, setSalesTotal] = useState(0)
-  const [selectedMetric, setSelectedMetric] = useState('in_1_month')
 
   useEffect(() => {
     const load = async () => {
@@ -39,43 +39,50 @@ const Alerts = () => {
   const in2 = expiryAlerts.filter((it) => it.status === 'in_2_months')
   const in1 = expiryAlerts.filter((it) => it.status === 'in_1_month')
 
-  const selectedDetails = (() => {
-    switch (selectedMetric) {
-      case 'sales':
-        return {
-          title: 'Sales details',
-          empty: 'No sales records found.',
-          items: salesAlerts.map((sale) => ({
-            key: sale.id,
-            label: sale.date ? new Date(sale.date).toLocaleString() : `Sale #${sale.id}`,
-            meta: `Cashier: ${sale.cashier_name || '-'} | Total amount: ${Number.parseFloat(sale.total_amount || 0).toFixed(2)}`,
-            items: Array.isArray(sale.items) ? sale.items : [],
-          })),
-        }
-      case 'expired':
-        return {
-          title: 'Expired product details',
-          empty: 'No expired products found.',
-          items: expiredItems.map((item) => ({ key: item.id, label: item.name, meta: `${item.expiry_date ? `Expired on ${new Date(item.expiry_date).toLocaleDateString()}` : 'Expired item'} | Qty: ${item.quantity ?? '-'}` })),
-        }
-      case 'missing':
-        return {
-          title: 'Missing product details',
-          empty: 'No missing product reports found.',
-          items: missingAlerts.map((m) => ({ key: m.id, label: m.product_name || 'Product', meta: `Expected: ${m.expected ?? '-'} | Actual: ${m.actual ?? '-'} | Difference: ${m.difference ?? '-'}` })),
-        }
-      case 'in_3_months':
-      case 'in_2_months':
-      case 'in_1_month':
-        return {
-          title: 'Expiring soon details',
-          empty: 'No expiring items found.',
-          items: expiryAlerts.filter((it) => it.status === selectedMetric).map((item) => ({ key: item.id, label: item.name, meta: item.expiry_date ? `Expires on ${new Date(item.expiry_date).toLocaleDateString()}` : 'Pending expiry date' })),
-        }
-      default:
-        return { title: 'Details', empty: 'No items found.', items: [] }
-    }
-  })()
+  const metricCards = [
+    {
+      key: 'sales',
+      label: 'Sales total',
+      value: salesTotal.toFixed ? salesTotal.toFixed(2) : salesTotal,
+      note: `${salesAlerts.length} transactions`,
+      theme: 'metric-success',
+    },
+    {
+      key: 'in_3_months',
+      label: 'Expiring in 3 months',
+      value: in3.length,
+      note: 'Items expiring in ~90 days',
+      theme: 'metric-info',
+    },
+    {
+      key: 'in_2_months',
+      label: 'Expiring in 2 months',
+      value: in2.length,
+      note: 'Items expiring in ~60 days',
+      theme: 'metric-accent',
+    },
+    {
+      key: 'in_1_month',
+      label: 'Expiring in 1 month',
+      value: in1.length,
+      note: 'Items expiring in ~30 days',
+      theme: 'metric-warn',
+    },
+    {
+      key: 'expired',
+      label: 'Due / Expired',
+      value: expiredItems.length,
+      note: 'Click to review expired items',
+      theme: 'metric-danger',
+    },
+    {
+      key: 'missing',
+      label: 'Missing alerts',
+      value: missingAlerts.length,
+      note: 'Click to review shortage reports',
+      theme: 'metric-accent',
+    },
+  ]
 
   return (
     <div className="page static-page">
@@ -85,41 +92,13 @@ const Alerts = () => {
         <p className="hero-subtitle">Track sales activity, expired stock, and missing product reports from one place.</p>
 
         <div className="metric-grid">
-          <button type="button" className={`metric-card metric-success metric-card-button ${selectedMetric === 'sales' ? 'metric-selected' : ''}`} onClick={() => setSelectedMetric('sales')}>
-            <p className="metric-label">Sales total</p>
-            <div className="metric-value">{salesTotal.toFixed ? salesTotal.toFixed(2) : salesTotal}</div>
-            <p className="section-note">{salesAlerts.length} transactions</p>
-          </button>
-
-          <button type="button" className={`metric-card metric-info metric-card-button ${selectedMetric === 'in_3_months' ? 'metric-selected' : ''}`} onClick={() => setSelectedMetric('in_3_months')}>
-            <p className="metric-label">Expiring in 3 months</p>
-            <div className="metric-value">{in3.length}</div>
-            <p className="section-note">Items expiring in ~90 days</p>
-          </button>
-
-          <button type="button" className={`metric-card metric-accent metric-card-button ${selectedMetric === 'in_2_months' ? 'metric-selected' : ''}`} onClick={() => setSelectedMetric('in_2_months')}>
-            <p className="metric-label">Expiring in 2 months</p>
-            <div className="metric-value">{in2.length}</div>
-            <p className="section-note">Items expiring in ~60 days</p>
-          </button>
-
-          <button type="button" className={`metric-card metric-warn metric-card-button ${selectedMetric === 'in_1_month' ? 'metric-selected' : ''}`} onClick={() => setSelectedMetric('in_1_month')}>
-            <p className="metric-label">Expiring in 1 month</p>
-            <div className="metric-value">{in1.length}</div>
-            <p className="section-note">Items expiring in ~30 days</p>
-          </button>
-
-          <button type="button" className={`metric-card metric-danger metric-card-button ${selectedMetric === 'expired' ? 'metric-selected' : ''}`} onClick={() => setSelectedMetric('expired')}>
-            <p className="metric-label">Due / Expired</p>
-            <div className="metric-value">{expiredItems.length}</div>
-            <p className="section-note">Click to review expired items</p>
-          </button>
-
-          <button type="button" className={`metric-card metric-accent metric-card-button ${selectedMetric === 'missing' ? 'metric-selected' : ''}`} onClick={() => setSelectedMetric('missing')}>
-            <p className="metric-label">Missing alerts</p>
-            <div className="metric-value">{missingAlerts.length}</div>
-            <p className="section-note">Click to review shortage reports</p>
-          </button>
+          {metricCards.map((metric) => (
+            <Link key={metric.key} to={`/alerts/${metric.key}`} className={`metric-card metric-card-link ${metric.theme}`}>
+              <p className="metric-label">{metric.label}</p>
+              <div className="metric-value">{metric.value}</div>
+              <span className="metric-link-hint">{metric.note}</span>
+            </Link>
+          ))}
         </div>
       </section>
 
@@ -157,23 +136,6 @@ const Alerts = () => {
         </div>
       )}
 
-      {!loading && (
-        <section className="panel">
-          <h2 className="section-title">{selectedDetails.title}</h2>
-          {selectedDetails.items.length ? (
-            <ul className="policy-list">
-              {selectedDetails.items.map((item) => (
-                <li key={item.key}>
-                  <strong>{item.label}</strong>
-                  <div className="section-note">{item.meta}</div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="section-note">{selectedDetails.empty}</p>
-          )}
-        </section>
-      )}
     </div>
   )
 }
