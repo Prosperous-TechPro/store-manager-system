@@ -16,6 +16,95 @@ const getHubtelUrl = () => {
   return process.env.HUBTEL_API_URL || process.env.HUBTEL_SMS_BASE_URL || '';
 };
 
+const buildHubtelRequest = (phone, content) => {
+  const normalizedPhone = normalizePhone(phone);
+  const baseUrl = getHubtelUrl();
+  if (!baseUrl) return null;
+
+  const url = new URL(baseUrl);
+  const isQueryAuthEndpoint = /smsc\.hubtel\.com/i.test(url.hostname) || url.searchParams.has('clientid') || url.searchParams.has('clientsecret');
+
+  if (process.env.HUBTEL_API_KEY) {
+    return {
+      url: url.toString(),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.HUBTEL_API_KEY}`,
+      },
+      body: {
+        to: normalizedPhone,
+        from: process.env.HUBTEL_SENDER || process.env.HUBTEL_SMS_FROM || 'STORE',
+        content,
+      },
+      method: 'post',
+    };
+  }
+
+  if (isQueryAuthEndpoint) {
+    if (process.env.HUBTEL_SMS_CLIENT_ID) url.searchParams.set('clientid', process.env.HUBTEL_SMS_CLIENT_ID);
+    if (process.env.HUBTEL_SMS_CLIENT_SECRET) url.searchParams.set('clientsecret', process.env.HUBTEL_SMS_CLIENT_SECRET);
+    if (process.env.HUBTEL_SMS_FROM || process.env.HUBTEL_SENDER) {
+      url.searchParams.set('from', process.env.HUBTEL_SENDER || process.env.HUBTEL_SMS_FROM || 'STORE');
+    }
+
+    return {
+      url: url.toString(),
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        to: normalizedPhone,
+        content,
+      },
+      method: 'post',
+    };
+  }
+
+  if (process.env.HUBTEL_BASIC_AUTH) {
+    const val = process.env.HUBTEL_BASIC_AUTH;
+    const authHeader = val.includes(':')
+      ? `Basic ${Buffer.from(val).toString('base64')}`
+      : val.toLowerCase().startsWith('basic ')
+        ? val
+        : `Basic ${val}`;
+    return {
+      url: url.toString(),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: authHeader,
+      },
+      body: {
+        to: normalizedPhone,
+        from: process.env.HUBTEL_SENDER || process.env.HUBTEL_SMS_FROM || 'STORE',
+        content,
+      },
+      method: 'post',
+    };
+  }
+
+  if (process.env.HUBTEL_SMS_CLIENT_ID && process.env.HUBTEL_SMS_CLIENT_SECRET) {
+    return {
+      url: url.toString(),
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        to: normalizedPhone,
+        from: process.env.HUBTEL_SENDER || process.env.HUBTEL_SMS_FROM || 'STORE',
+        content,
+      },
+      method: 'post',
+    };
+  }
+
+  return {
+    url: url.toString(),
+    headers: { 'Content-Type': 'application/json' },
+    body: {
+      to: normalizedPhone,
+      from: process.env.HUBTEL_SENDER || process.env.HUBTEL_SMS_FROM || 'STORE',
+      content,
+    },
+    method: 'post',
+  };
+};
+
 const queryWithClient = async (client, text, params) => {
   if (client) return client.query(text, params);
   return db.query(text, params);
@@ -69,20 +158,13 @@ const generateAndSendCode = async (phone, purpose = 'verification', options = {}
 
   const message = `Your verification code is ${code}. It expires in ${SEND_EXPIRY_MINUTES} minutes.`;
 
-  const headers = Object.assign({ 'Content-Type': 'application/json' }, getAuthHeader());
-  const hubtelUrl = getHubtelUrl();
-  if (!hubtelUrl) {
+  const request = buildHubtelRequest(normalizedPhone, message);
+  if (!request) {
     console.warn('Hubtel URL not configured; skipping actual send');
     return { ok: true, sent: false, code };
   }
 
-  const body = {
-    to: normalizedPhone,
-    from: process.env.HUBTEL_SENDER || process.env.HUBTEL_SMS_FROM || 'STORE',
-    content: message
-  };
-
-  const resp = await axios.post(hubtelUrl, body, { headers });
+  const resp = await axios.post(request.url, request.body, { headers: request.headers });
   if (resp.status >= 200 && resp.status < 300) {
     return { ok: true, sent: true };
   }
@@ -93,18 +175,13 @@ const sendTextMessage = async (phone, content) => {
   const normalizedPhone = normalizePhone(phone);
   if (!normalizedPhone) return { ok: false, sent: false, reason: 'no_phone' };
 
-  const headers = Object.assign({ 'Content-Type': 'application/json' }, getAuthHeader());
-  const hubtelUrl = getHubtelUrl();
-  if (!hubtelUrl) {
+  const request = buildHubtelRequest(normalizedPhone, content);
+  if (!request) {
     console.warn('Hubtel URL not configured; skipping report send');
     return { ok: true, sent: false, reason: 'no_provider' };
   }
 
-  const resp = await axios.post(hubtelUrl, {
-    to: normalizedPhone,
-    from: process.env.HUBTEL_SENDER || process.env.HUBTEL_SMS_FROM || 'STORE',
-    content,
-  }, { headers });
+  const resp = await axios.post(request.url, request.body, { headers: request.headers });
 
   if (resp.status >= 200 && resp.status < 300) {
     return { ok: true, sent: true };
