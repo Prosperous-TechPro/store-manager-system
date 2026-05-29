@@ -5,8 +5,9 @@ const expiryAlerts = async (req, res) => {
     const result = await db.query(`SELECT id,name,quantity,expiry_date,
       CASE
         WHEN expiry_date <= NOW()::date THEN 'expired'
-        WHEN expiry_date <= (NOW()::date + INTERVAL '7 days') THEN '<=7'
-        WHEN expiry_date <= (NOW()::date + INTERVAL '30 days') THEN '<=30'
+        WHEN expiry_date <= (NOW()::date + INTERVAL '1 month') THEN 'in_1_month'
+        WHEN expiry_date <= (NOW()::date + INTERVAL '2 months') THEN 'in_2_months'
+        WHEN expiry_date <= (NOW()::date + INTERVAL '3 months') THEN 'in_3_months'
         ELSE 'ok'
       END as status
       FROM products WHERE expiry_date IS NOT NULL ORDER BY expiry_date`);

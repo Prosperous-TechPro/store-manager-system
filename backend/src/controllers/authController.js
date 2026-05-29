@@ -66,9 +66,10 @@ const register = async (req, res) => {
     const phoneExists = await db.query('SELECT id FROM users WHERE phone=$1', [normalizedPhone]);
     if (phoneExists.rows.length) return res.status(409).json({ error: 'Phone number already registered' });
     const hash = await bcrypt.hash(password, 10);
+    const approved = normalizedRole === 'ceo';
     const result = await db.query(
       'INSERT INTO users(name,email,password,role,phone,phone_verified,approved) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id,name,email,role,phone,phone_verified,approved',
-      [name, normalizedEmail, hash, normalizedRole, normalizedPhone, false, false]
+      [name, normalizedEmail, hash, normalizedRole, normalizedPhone, false, approved]
     );
     const user = result.rows[0];
     try {
@@ -76,7 +77,11 @@ const register = async (req, res) => {
     } catch (e) {
       console.warn('Failed to send signup SMS', e.message || e);
     }
-    res.status(201).json({ ...user, verification_required: true, approval_required: true });
+    res.status(201).json({
+      ...user,
+      verification_required: true,
+      approval_required: !approved,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

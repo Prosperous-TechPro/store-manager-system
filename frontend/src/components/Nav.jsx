@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import api from '../services/api'
 
 const Nav = ()=>{
@@ -29,6 +29,8 @@ const Nav = ()=>{
   }, [canViewAlerts, user])
 
   const logout = ()=>{ localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href='/login' }
+  const location = useLocation()
+  const hideLogout = location?.pathname === '/account'
   const canViewRecords = ['manager', 'ceo', 'admin'].includes(role)
   const canViewDashboard = ['manager', 'ceo', 'admin'].includes(role)
   return (
@@ -58,7 +60,7 @@ const Nav = ()=>{
                 <span className="nav-account-name">{user.name}</span>
                 <span className="nav-account-role">Role: {role === 'ceo' ? 'CEO' : user.role}</span>
               </Link>
-              <button className="button-secondary" onClick={logout}>Logout</button>
+              {!hideLogout && <button className="button-secondary" onClick={logout}>Logout</button>}
             </>
           ) : (
             <Link to="/login" className="button-primary">Login</Link>

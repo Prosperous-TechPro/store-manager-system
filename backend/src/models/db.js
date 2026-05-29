@@ -134,6 +134,12 @@ const initSchema = async () => {
 
       await pool.query('CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(barcode)');
       await pool.query('CREATE INDEX IF NOT EXISTS idx_sales_date ON sales(date)');
+      // Ensure existing CEO/owner users are marked approved
+      try {
+        await pool.query("UPDATE users SET approved=true, approved_at=NOW() WHERE lower(role)='ceo' OR lower(role)='owner'")
+      } catch (e) {
+        console.warn('Failed to auto-approve existing ceo/owner users', e && e.message)
+      }
     })();
   }
   return initPromise;

@@ -117,7 +117,7 @@ const Login = () => {
                   <option value="saler">Sales Associate</option>
                   <option value="ceo">CEO</option>
                 </select>
-                <div className="helper-text">Choose the role that matches the user’s job function and access level.</div>
+                <div className="helper-text">Choose the role that matches the user’s job function and access level. CEO accounts are approved immediately.</div>
               </div>
             </>
           )}

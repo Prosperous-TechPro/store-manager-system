@@ -84,7 +84,7 @@ const Approvals = () => {
         </div>
       ) : (
         <div className="panel">
-          <p className="section-note">No pending requests right now.</p>
+          <p className="section-note">No pending approval</p>
         </div>
       )}
     </div>
