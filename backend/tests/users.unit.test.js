@@ -1,8 +1,10 @@
 const db = require('../src/models/db')
 const { approveUser } = require('../src/controllers/userController')
 const { deleteAccount } = require('../src/controllers/authController')
+const sms = require('../src/controllers/smsController')
 
 jest.mock('../src/models/db')
+jest.mock('../src/controllers/smsController')
 
 const makeRes = ()=>{
   const res = {}
@@ -16,8 +18,8 @@ describe('userController.unit', ()=>{
 
   test('approveUser: blocks manager approver for manager target', async ()=>{
     db.query.mockImplementation((text)=>{
-      if (text.startsWith('SELECT id, role, approved, deleted_at FROM users WHERE id=$1')) {
-        return Promise.resolve({ rows: [{ id: 11, role: 'manager', approved: false, deleted_at: null }] })
+      if (text.startsWith('SELECT id, role, approved FROM users WHERE id=$1')) {
+        return Promise.resolve({ rows: [{ id: 11, role: 'manager', approved: false }] })
       }
       return Promise.resolve({ rows: [] })
     })
@@ -33,8 +35,8 @@ describe('userController.unit', ()=>{
 
   test('approveUser: allows CEO approver for manager target', async ()=>{
     db.query.mockImplementation((text, params)=>{
-      if (text.startsWith('SELECT id, role, approved, deleted_at FROM users WHERE id=$1')) {
-        return Promise.resolve({ rows: [{ id: 12, role: 'manager', approved: false, deleted_at: null }] })
+      if (text.startsWith('SELECT id, role, approved FROM users WHERE id=$1')) {
+        return Promise.resolve({ rows: [{ id: 12, role: 'manager', approved: false }] })
       }
       if (text.includes('UPDATE users') && params?.[1] === 12) {
         return Promise.resolve({ rows: [{ id: 12, name: 'Martha', email: 'martha@example.com', role: 'manager', approved: true }] })
@@ -63,14 +65,18 @@ describe('userController.unit', ()=>{
 
   test('deleteAccount: deletes a user when reason is provided', async ()=>{
     db.query.mockImplementation((text, params)=>{
-      if (text.startsWith('SELECT id, deleted_at FROM users WHERE id=$1')) {
-        return Promise.resolve({ rows: [{ id: 12, deleted_at: null }] })
+      if (text.startsWith('SELECT id,name,email,role,phone,phone_verified,created_at FROM users WHERE id=$1')) {
+        return Promise.resolve({ rows: [{ id: 12, name: 'Martha', email: 'martha@example.com', role: 'manager', phone: '0241234567', phone_verified: true, created_at: new Date().toISOString() }] })
       }
-      if (text.startsWith('UPDATE users')) {
-        return Promise.resolve({ rows: [{ id: 12, name: 'Martha', email: 'martha@example.com', role: 'manager', deleted_at: new Date().toISOString(), delete_reason: 'Left company', deleted_by: 1 }] })
+      if (text.startsWith('DELETE FROM users')) {
+        return Promise.resolve({ rows: [{ id: 12 }] })
+      }
+      if (text.startsWith("SELECT phone\n       FROM users\n       WHERE lower(role) IN ('ceo','owner')")) {
+        return Promise.resolve({ rows: [{ phone: '+233200000000' }] })
       }
       return Promise.resolve({ rows: [] })
     })
+    sms.sendTextMessage.mockResolvedValue({ ok: true, sent: true })
 
     const req = { params: { id: '12' }, user: { id: 1, role: 'manager' }, body: { reason: 'Left company' } }
     const res = makeRes()
@@ -78,6 +84,11 @@ describe('userController.unit', ()=>{
     await deleteAccount(req, res)
 
     expect(res._body).toMatchObject({ ok: true })
-    expect(res._body.user).toMatchObject({ id: 12, delete_reason: 'Left company', deleted_by: 1 })
+    expect(res._body.user).toMatchObject({ id: 12, name: 'Martha', email: 'martha@example.com', role: 'manager' })
+    expect(res._body.report.type).toBe('user_deletion')
+    expect(res._body.delete_reason).toBe('Left company')
+    expect(res._body.deleted_by).toBe(1)
+    expect(res._body.report_delivered_to).toEqual([{ phone: '+233200000000', sent: true }])
+    expect(sms.sendTextMessage).toHaveBeenCalled()
   })
 })

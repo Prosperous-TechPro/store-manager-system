@@ -63,6 +63,30 @@ const generateAndSendCode = async (phone, purpose = 'verification') => {
   throw new Error('SMS provider error');
 };
 
+const sendTextMessage = async (phone, content) => {
+  const normalizedPhone = normalizePhone(phone);
+  if (!normalizedPhone) return { ok: false, sent: false, reason: 'no_phone' };
+
+  const headers = Object.assign({ 'Content-Type': 'application/json' }, getAuthHeader());
+  const hubtelUrl = getHubtelUrl();
+  if (!hubtelUrl) {
+    console.warn('Hubtel URL not configured; skipping report send');
+    return { ok: true, sent: false, reason: 'no_provider' };
+  }
+
+  const resp = await axios.post(hubtelUrl, {
+    to: normalizedPhone,
+    from: process.env.HUBTEL_SENDER || process.env.HUBTEL_SMS_FROM || 'STORE',
+    content,
+  }, { headers });
+
+  if (resp.status >= 200 && resp.status < 300) {
+    return { ok: true, sent: true };
+  }
+
+  throw new Error('SMS provider error');
+};
+
 // Internal helper: verify a code for a phone; returns true if ok
 const verifyCodeInternal = async (phone, code, purpose = null) => {
   const normalizedPhone = normalizePhone(phone);
@@ -111,4 +135,4 @@ const verifyCode = async (req, res) => {
   }
 };
 
-module.exports = { sendVerification, verifyCode, generateAndSendCode, verifyCodeInternal };
+module.exports = { sendVerification, verifyCode, generateAndSendCode, verifyCodeInternal, sendTextMessage };

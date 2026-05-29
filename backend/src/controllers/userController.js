@@ -3,7 +3,7 @@ const db = require('../models/db');
 const listUsers = async (req, res) => {
   try {
     const result = await db.query(
-      'SELECT id,name,email,role,phone,phone_verified,approved,approved_at,approved_by,deleted_at,deleted_by,delete_reason,created_at FROM users ORDER BY COALESCE(deleted_at, created_at) DESC, created_at DESC'
+      'SELECT id,name,email,role,phone,phone_verified,approved,approved_at,approved_by,created_at FROM users ORDER BY created_at DESC'
     );
     res.json(result.rows);
   } catch (err) {
@@ -15,9 +15,9 @@ const listUsers = async (req, res) => {
 const listPendingUsers = async (req, res) => {
   try {
     const result = await db.query(
-      `SELECT id,name,email,role,phone,phone_verified,approved,approved_at,approved_by,deleted_at,created_at
+      `SELECT id,name,email,role,phone,phone_verified,approved,approved_at,approved_by,created_at
        FROM users
-       WHERE approved=false AND deleted_at IS NULL
+       WHERE approved=false
        ORDER BY created_at DESC`
     );
     res.json(result.rows);
@@ -32,10 +32,9 @@ const approveUser = async (req, res) => {
   if (!targetId) return res.status(400).json({ error: 'Valid user id is required' });
 
   try {
-    const targetResult = await db.query('SELECT id, role, approved, deleted_at FROM users WHERE id=$1', [targetId]);
+    const targetResult = await db.query('SELECT id, role, approved FROM users WHERE id=$1', [targetId]);
     const target = targetResult.rows[0];
     if (!target) return res.status(404).json({ error: 'User not found' });
-    if (target.deleted_at) return res.status(409).json({ error: 'User has been deleted' });
     if (String(target.role || '').toLowerCase() === 'manager' && String(req.user.role || '').toLowerCase() !== 'ceo') {
       return res.status(403).json({ error: 'Manager accounts must be approved by CEO' });
     }

@@ -140,6 +140,12 @@ const initSchema = async () => {
       } catch (e) {
         console.warn('Failed to auto-approve existing ceo/owner users', e && e.message)
       }
+
+      try {
+        await pool.query('DELETE FROM users WHERE deleted_at IS NOT NULL')
+      } catch (e) {
+        console.warn('Failed to purge legacy deleted users', e && e.message)
+      }
     })();
   }
   return initPromise;

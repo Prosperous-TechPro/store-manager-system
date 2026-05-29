@@ -100,7 +100,9 @@ const Products = () => {
       <div className="table-card">
         {loading ? <div className="loading-state">Loading products...</div> : (
           filteredProducts.length ? (
-            <table>
+            <>
+            <div className="data-table-view">
+              <table>
               <thead>
                 <tr><th>Name</th><th>Qty</th><th>Expiry</th><th>Supplier</th><th>Actions</th></tr>
               </thead>
@@ -120,7 +122,41 @@ const Products = () => {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
+
+            <div className="data-card-list">
+              {filteredProducts.map((p) => (
+                <article key={`product-${p.id}`} className="data-card panel">
+                  <div className="data-card-head">
+                    <div>
+                      <h2 className="approval-card-title">{p.name}</h2>
+                      <p className="section-note">{p.category || 'Uncategorized'}</p>
+                    </div>
+                    <span className={p.quantity <= (p.reorder_level || 0) ? 'tag tag-warn' : 'tag tag-success'}>{p.quantity}</span>
+                  </div>
+
+                  <div className="approval-card-body">
+                    <div>
+                      <span className="approval-label">Expiry</span>
+                      <div>{p.expiry_date || '-'}</div>
+                    </div>
+                    <div>
+                      <span className="approval-label">Supplier</span>
+                      <div>{p.supplier_name || '-'}</div>
+                    </div>
+                  </div>
+
+                  <div className="approval-card-actions">
+                    <div className="table-actions">
+                      {canManageProducts && <button className="button-secondary" onClick={()=>onEdit(p)}>Edit</button>}
+                      {canDeleteProducts && <button className="button-danger" onClick={()=>onDelete(p.id)}>Delete</button>}
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+            </>
           ) : (
             <div className="empty-state">
               {searchQuery

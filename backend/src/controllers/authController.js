@@ -336,22 +336,62 @@ const deleteAccount = async (req, res) => {
   if (!reason || !String(reason).trim()) return res.status(400).json({ error: 'Delete reason is required' });
 
   try {
-    const targetResult = await db.query('SELECT id, deleted_at FROM users WHERE id=$1', [targetId]);
+    const targetResult = await db.query('SELECT id,name,email,role,phone,phone_verified,created_at FROM users WHERE id=$1', [targetId]);
     const target = targetResult.rows[0];
     if (!target) return res.status(404).json({ error: 'User not found' });
-    if (target.deleted_at) return res.status(409).json({ error: 'User is already deleted' });
 
-    const result = await db.query(
-      `UPDATE users
-       SET deleted_at=NOW(),
-           deleted_by=$1,
-           delete_reason=$2
-       WHERE id=$3
-       RETURNING id,name,email,role,phone,phone_verified,deleted_at,delete_reason,deleted_by,created_at`,
-      [req.user.id, String(reason).trim(), targetId]
+    const report = {
+      type: 'user_deletion',
+      deleted_user: {
+        id: target.id,
+        name: target.name,
+        email: target.email,
+        role: target.role,
+        phone: target.phone,
+        phone_verified: target.phone_verified,
+        created_at: target.created_at,
+      },
+      deleted_by: req.user.id,
+      delete_reason: String(reason).trim(),
+      deleted_at: new Date().toISOString(),
+    };
+
+    await db.query(
+      `DELETE FROM users
+       WHERE id=$1
+       RETURNING id`,
+      [targetId]
     );
 
-    res.json({ ok: true, user: result.rows[0] });
+    const recipients = await db.query(
+      `SELECT phone
+       FROM users
+       WHERE lower(role) IN ('ceo','owner')
+         AND phone IS NOT NULL
+         AND phone <> ''
+       ORDER BY created_at ASC`
+    );
+
+    const reportText = `Deleted account report: ${target.name} (${target.email}) | Role: ${target.role} | Deleted by: ${req.user.id} | Reason: ${report.delete_reason}`;
+    const deliveryResults = [];
+    for (const recipient of recipients.rows) {
+      try {
+        const sent = await sms.sendTextMessage(recipient.phone, reportText);
+        deliveryResults.push({ phone: recipient.phone, sent: Boolean(sent && sent.sent) });
+      } catch (sendErr) {
+        console.warn('Failed to send deleted account report', sendErr && sendErr.message);
+        deliveryResults.push({ phone: recipient.phone, sent: false });
+      }
+    }
+
+    res.json({
+      ok: true,
+      user: report.deleted_user,
+      report,
+      report_delivered_to: deliveryResults,
+      delete_reason: report.delete_reason,
+      deleted_by: req.user.id,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to delete user' });

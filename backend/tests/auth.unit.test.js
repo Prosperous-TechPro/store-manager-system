@@ -76,6 +76,31 @@ describe('authController.unit', ()=>{
     expect(sms.generateAndSendCode).not.toHaveBeenCalled()
   })
 
+  test('deleteAccount: generates a report and sends it to CEO phones', async ()=>{
+    db.query.mockImplementation((text)=>{
+      if (text.startsWith('SELECT id,name,email,role,phone,phone_verified,created_at FROM users WHERE id=$1')) {
+        return Promise.resolve({ rows: [{ id: 22, name: 'Martha', email: 'martha@example.com', role: 'manager', phone: '0241234567', phone_verified: true, created_at: new Date().toISOString() }] })
+      }
+      if (text.startsWith('DELETE FROM users')) return Promise.resolve({ rows: [{ id: 22 }] })
+      if (text.startsWith("SELECT phone\n       FROM users\n       WHERE lower(role) IN ('ceo','owner')")) {
+        return Promise.resolve({ rows: [{ phone: '+233200000000' }] })
+      }
+      return Promise.resolve({ rows: [] })
+    })
+    sms.sendTextMessage.mockResolvedValue({ ok: true, sent: true })
+
+    const req = { params: { id: '22' }, user: { id: 1, role: 'ceo' }, body: { reason: 'Left company' } }
+    const res = makeRes()
+
+    await auth.deleteAccount(req, res)
+
+    expect(res._body.ok).toBe(true)
+    expect(res._body.report.type).toBe('user_deletion')
+    expect(res._body.report.delete_reason).toBe('Left company')
+    expect(res._body.report_delivered_to).toEqual([{ phone: '+233200000000', sent: true }])
+    expect(sms.sendTextMessage).toHaveBeenCalledWith('+233200000000', expect.stringContaining('Martha (martha@example.com)'))
+  })
+
   test('verifyPhone: verifies code and updates user', async ()=>{
     db.query.mockImplementation((text, params)=>{
       if (text.startsWith('SELECT * FROM sms_verifications')) return Promise.resolve({ rows: [{ id:10, code_hash:'hash', expires_at: new Date(Date.now()+10000), verified:false }] })

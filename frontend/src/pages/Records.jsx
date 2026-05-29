@@ -97,7 +97,9 @@ const Records = () => {
         ) : error ? (
           <div className="error-banner">{error}</div>
         ) : users.length ? (
-          <table>
+          <>
+          <div className="data-table-view">
+            <table>
             <thead>
               <tr>
                 <th>Name</th>
@@ -106,8 +108,6 @@ const Records = () => {
                 <th>Role</th>
                 <th>Verified</th>
                 <th>Approval</th>
-                <th>Status</th>
-                {canSeeDeleteReason && <th>Delete Reason</th>}
                 {canApproveUsers && <th>Approve</th>}
                 {canDeleteUsers && <th>Action</th>}
                 <th>Created</th>
@@ -122,11 +122,9 @@ const Records = () => {
                   <td><span className="tag tag-role">Role: {user.role}</span></td>
                   <td>{user.phone_verified ? <span className="tag tag-success">Yes</span> : <span className="tag tag-warn">No</span>}</td>
                   <td>{user.approved ? <span className="tag tag-success">Approved</span> : <span className="tag tag-warn">Pending</span>}</td>
-                  <td>{user.deleted_at ? <span className="tag tag-danger">Deleted</span> : <span className="tag tag-success">Active</span>}</td>
-                  {canSeeDeleteReason && <td>{user.delete_reason || '-'}</td>}
                   {canApproveUsers && (
                     <td>
-                      {!user.deleted_at && !user.approved ? (
+                      {!user.approved ? (
                         <button className="button-secondary" onClick={() => approveUser(user)} disabled={approvingId === user.id}>
                           {approvingId === user.id ? 'Approving...' : 'Approve'}
                         </button>
@@ -137,18 +135,62 @@ const Records = () => {
                   )}
                   {canDeleteUsers && (
                     <td>
-                      {!user.deleted_at ? (
-                        <button className="button-secondary" onClick={() => openDelete(user)}>Delete</button>
-                      ) : (
-                        <span className="section-note">Deleted by user {user.deleted_by || '-'}</span>
-                      )}
+                      <button className="button-secondary" onClick={() => openDelete(user)}>Delete</button>
                     </td>
                   )}
                   <td>{user.created_at ? new Date(user.created_at).toLocaleString() : '-'}</td>
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
+
+          <div className="data-card-list">
+            {users.map((user) => (
+              <article key={`user-${user.id}`} className="data-card panel">
+                <div className="data-card-head">
+                  <div>
+                    <h2 className="approval-card-title">{user.name}</h2>
+                    <p className="section-note">{user.email}</p>
+                  </div>
+                  <span className="tag tag-role">Role: {user.role}</span>
+                </div>
+
+                <div className="approval-card-body">
+                  <div>
+                    <span className="approval-label">Phone</span>
+                    <div>{user.phone || '-'}</div>
+                  </div>
+                  <div>
+                    <span className="approval-label">Verified</span>
+                    <div>{user.phone_verified ? <span className="tag tag-success">Yes</span> : <span className="tag tag-warn">No</span>}</div>
+                  </div>
+                  <div>
+                    <span className="approval-label">Approval</span>
+                    <div>{user.approved ? <span className="tag tag-success">Approved</span> : <span className="tag tag-warn">Pending</span>}</div>
+                  </div>
+                  <div>
+                    <span className="approval-label">Created</span>
+                    <div>{user.created_at ? new Date(user.created_at).toLocaleString() : '-'}</div>
+                  </div>
+                </div>
+
+                <div className="approval-card-actions">
+                  <div className="table-actions">
+                    {canApproveUsers && !user.approved && (
+                      <button className="button-secondary" onClick={() => approveUser(user)} disabled={approvingId === user.id}>
+                        {approvingId === user.id ? 'Approving...' : 'Approve'}
+                      </button>
+                    )}
+                    {canDeleteUsers && (
+                      <button className="button-secondary" onClick={() => openDelete(user)}>Delete</button>
+                    )}
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+          </>
         ) : (
           <div className="empty-state">No user records found.</div>
         )}
@@ -158,7 +200,7 @@ const Records = () => {
         <div className="modal">
           <div className="modal-body">
             <h2 className="modal-title">Delete user</h2>
-            <p className="section-note">You are deleting {deleteTarget.name} ({deleteTarget.email}). A reason is required before this user can be removed.</p>
+            <p className="section-note">You are removing {deleteTarget.name} ({deleteTarget.email}) from the system. A reason is required before this user can be removed.</p>
             <form onSubmit={confirmDelete} className="form-grid">
               <div className="form-field">
                 <label>Delete reason <span className="helper-text">Required</span></label>
