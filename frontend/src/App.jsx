@@ -19,7 +19,8 @@ import Nav from './components/Nav'
 import Footer from './components/Footer'
 
 const App = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  // sidebar removed — keep layout simple with topbar navigation
+  const [sidebarOpen] = useState(false)
   const token = localStorage.getItem('token')
   const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
   const currentRole = currentUser?.role === 'owner' ? 'ceo' : currentUser?.role
@@ -38,8 +39,8 @@ const App = () => {
   }, [location])
 
   return (
-    <div className={`app-shell ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-      <Nav sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen((value) => !value)} />
+    <div className={`app-shell`}>
+      <Nav />
       <main className="app-main">
       <Routes>
         <Route path="/" element={<Landing />} />
