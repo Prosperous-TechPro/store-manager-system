@@ -40,13 +40,13 @@ const Approvals = () => {
   return (
     <div className="page static-page">
       <section className="hero-card">
-        <div className="auth-badge">Approvals queue</div>
+        <div className="auth-badge">Request queue</div>
         <h1 className="hero-title">Pending account requests</h1>
         <p className="hero-subtitle">CEO and manager accounts can approve new signups before they gain access to the site.</p>
       </section>
 
       {loading ? (
-        <div className="loading-state">Loading approval requests...</div>
+        <div className="loading-state">Loading request queue...</div>
       ) : error ? (
         <div className="error-banner">{error}</div>
       ) : users.length ? (
@@ -84,7 +84,7 @@ const Approvals = () => {
         </div>
       ) : (
         <div className="panel">
-          <p className="section-note">No pending account requests right now.</p>
+          <p className="section-note">No pending requests right now.</p>
         </div>
       )}
     </div>

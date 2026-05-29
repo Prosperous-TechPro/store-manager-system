@@ -6,7 +6,7 @@ const Nav = ()=>{
   const user = JSON.parse(localStorage.getItem('user') || 'null')
   const role = user?.role === 'owner' ? 'ceo' : user?.role
   const canViewAlerts = ['manager', 'ceo', 'admin'].includes(role)
-  const canViewApprovals = ['manager', 'ceo'].includes(role)
+  const canViewRequests = ['manager', 'ceo'].includes(role)
   const [alertCount, setAlertCount] = useState(0)
 
   useEffect(() => {
@@ -46,7 +46,7 @@ const Nav = ()=>{
           {canViewDashboard && <Link to="/dashboard">Dashboard</Link>}
           <Link to="/products">Products</Link>
           {canViewRecords && <Link to="/records">Records</Link>}
-          {canViewApprovals && <Link to="/approvals">Approvals</Link>}
+          {canViewRequests && <Link to="/requests">Request</Link>}
           {canViewAlerts && <Link to="/alerts">Alerts</Link>}
         </div>
         <div className="nav-actions">
