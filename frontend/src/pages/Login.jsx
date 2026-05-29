@@ -77,7 +77,7 @@ const Login = () => {
           )}
           <div className="form-field">
             <label>Email</label>
-            <input value={email} onChange={(e)=>setEmail(e.target.value)} disabled={loading} />
+            <input type="email" value={email} onChange={(e)=>setEmail(e.target.value)} disabled={loading} />
           </div>
           <div className="form-field">
             <label>Password</label>
@@ -102,7 +102,7 @@ const Login = () => {
               </div>
               <div className="form-field">
                 <label>Phone number <span className="helper-text">Required for OTP verification</span></label>
-                <input value={phone} onChange={(e)=>setPhone(e.target.value)} disabled={loading} />
+                <input type="tel" value={phone} onChange={(e)=>setPhone(e.target.value)} disabled={loading} placeholder="e.g. 0241234567 or +233241234567" />
               </div>
               <div className="form-field">
                 <label>Role</label>

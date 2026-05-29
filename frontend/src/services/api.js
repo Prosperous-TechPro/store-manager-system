@@ -1,16 +1,28 @@
 const isLocalDev = typeof window !== 'undefined'
   && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
+const isVercelHost = typeof window !== 'undefined'
+  && (window.location.hostname.endsWith('.vercel.app') || window.location.hostname.includes('vercel.app'))
+
 const resolveApiBase = () => {
   const configuredBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE || import.meta.env.VITE_BACKEND_URL || ''
+
+  if (typeof window !== 'undefined' && !isLocalDev) {
+    if (isVercelHost) {
+      return '/api'
+    }
+
+    if (configuredBase) {
+      const normalized = configuredBase.replace(/\/$/, '')
+      return normalized
+    }
+
+    return '/api'
+  }
 
   if (configuredBase) {
     const normalized = configuredBase.replace(/\/$/, '')
     return normalized
-  }
-
-  if (typeof window !== 'undefined' && !isLocalDev) {
-    return '/api'
   }
 
   return 'http://localhost:4000/api'

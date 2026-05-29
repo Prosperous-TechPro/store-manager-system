@@ -5,16 +5,22 @@ const jwt = require('jsonwebtoken');
 const sms = require('./smsController');
 
 const ALLOWED_ROLES = new Set(['casher', 'manager', 'saler', 'owner', 'admin']);
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const GH_PHONE_REGEX = /^(?:\+233|0)\d{9}$/;
 
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
 
 const normalizePhone = (phone) => {
   if (!phone) return null;
   const raw = String(phone).trim().replace(/\s+/g, '');
-  if (raw.startsWith('+')) return raw;
+  if (raw.startsWith('+233') && /^\+233\d{9}$/.test(raw)) return raw;
   if (raw.startsWith('0') && raw.length === 10) return `+233${raw.slice(1)}`;
   return raw;
 };
+
+const isValidEmail = (email) => EMAIL_REGEX.test(String(email || '').trim());
+
+const isValidPhone = (phone) => GH_PHONE_REGEX.test(String(phone || '').trim().replace(/\s+/g, ''));
 
 const register = async (req, res) => {
   const { name, email, password, role = 'casher', phone } = req.body;
@@ -25,6 +31,12 @@ const register = async (req, res) => {
   const normalizedPhone = normalizePhone(phone);
   if (!ALLOWED_ROLES.has(normalizedRole)) {
     return res.status(400).json({ error: 'Invalid role selected' });
+  }
+  if (!isValidEmail(normalizedEmail)) {
+    return res.status(400).json({ error: 'Enter a valid email address' });
+  }
+  if (!isValidPhone(normalizedPhone)) {
+    return res.status(400).json({ error: 'Enter a valid Ghana phone number' });
   }
   if (!normalizedPhone) {
     return res.status(400).json({ error: 'Valid phone number is required' });
@@ -55,6 +67,7 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Missing fields' });
+  if (!isValidEmail(email)) return res.status(400).json({ error: 'Enter a valid email address' });
   try {
     const normalizedEmail = normalizeEmail(email);
     const result = await db.query('SELECT id,name,email,password,role,phone,phone_verified,deleted_at FROM users WHERE lower(email)=lower($1)', [normalizedEmail]);
@@ -98,6 +111,7 @@ const verifyPhone = async (req, res) => {
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email required' });
+  if (!isValidEmail(email)) return res.status(400).json({ error: 'Enter a valid email address' });
   try {
     const normalizedEmail = normalizeEmail(email);
     const result = await db.query('SELECT id,email,phone FROM users WHERE lower(email)=lower($1)', [normalizedEmail]);
@@ -136,6 +150,9 @@ const updateMe = async (req, res) => {
     const nextPhone = typeof phone === 'string' && phone.trim() ? normalizePhone(phone) : existing.phone;
     const contactChanged = nextEmail !== existing.email || nextPhone !== existing.phone;
     const passwordChanged = Boolean(newPassword);
+
+    if (!isValidEmail(nextEmail)) return res.status(400).json({ error: 'Enter a valid email address' });
+    if (!isValidPhone(nextPhone)) return res.status(400).json({ error: 'Enter a valid Ghana phone number' });
 
     if ((nextName !== existing.name || contactChanged || passwordChanged) && !currentPassword) {
       return res.status(400).json({ error: 'Current password is required to confirm account changes' });

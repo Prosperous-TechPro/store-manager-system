@@ -13,12 +13,10 @@ const smsRoutes = require('./routes/sms');
 
 const app = express();
 
-// Configure CORS using `CORS_ORIGIN` env var (comma-separated allowed origins).
-// If no env var is set, echo the browser origin so Vercel/preview hosts still work.
 const corsOptions = {
-	origin: process.env.CORS_ORIGIN
-		? process.env.CORS_ORIGIN.split(',').map(s => s.trim())
-		: true,
+	origin: (origin, callback) => {
+		callback(null, true);
+	},
 	methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 	allowedHeaders: ['Content-Type', 'Authorization'],
 	optionsSuccessStatus: 204,

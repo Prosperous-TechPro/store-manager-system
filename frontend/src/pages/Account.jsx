@@ -225,11 +225,11 @@ const Account = () => {
                 </div>
                 <div className="form-field">
                   <label>Email</label>
-                  <input value={form.email} onChange={(e) => change('email', e.target.value)} disabled={saving} />
+                  <input type="email" value={form.email} onChange={(e) => change('email', e.target.value)} disabled={saving} />
                 </div>
                 <div className="form-field">
                   <label>Phone</label>
-                  <input value={form.phone} onChange={(e) => change('phone', e.target.value)} disabled={saving} />
+                  <input type="tel" value={form.phone} onChange={(e) => change('phone', e.target.value)} disabled={saving} placeholder="e.g. 0241234567 or +233241234567" />
                 </div>
                 <div className="form-field">
                   <label>Role</label>

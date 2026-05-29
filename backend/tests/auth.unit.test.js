@@ -27,12 +27,12 @@ describe('authController.unit', ()=>{
     })
     sms.generateAndSendCode.mockResolvedValue({ ok:true, sent:false, code:'123456' })
 
-    const req = { body: { name:'Sam', email:'s@e.com', password:'TestPass123!', phone:'+233111' } }
+    const req = { body: { name:'Sam', email:'s@e.com', password:'TestPass123!', phone:'+233241234567' } }
     const res = makeRes()
     await auth.register(req, res)
     expect(res._status).toBe(201)
     expect(res._body).toHaveProperty('email','s@e.com')
-    expect(sms.generateAndSendCode).toHaveBeenCalledWith('+233111','signup')
+    expect(sms.generateAndSendCode).toHaveBeenCalledWith('+233241234567','signup')
   })
 
   test('verifyPhone: verifies code and updates user', async ()=>{
@@ -40,27 +40,27 @@ describe('authController.unit', ()=>{
       if (text.startsWith('SELECT * FROM sms_verifications')) return Promise.resolve({ rows: [{ id:10, code_hash:'hash', expires_at: new Date(Date.now()+10000), verified:false }] })
       if (text.startsWith('UPDATE sms_verifications SET verified=true')) return Promise.resolve({})
       if (text.startsWith('UPDATE users SET phone_verified=true')) return Promise.resolve({})
-      if (text.startsWith('SELECT id,name,email,role,phone FROM users WHERE phone=$1')) return Promise.resolve({ rows: [{ id: 1, name: 'Sam', email: 's@e.com', role: 'manager', phone: '+233111' }] })
+      if (text.startsWith('SELECT id,name,email,role,phone FROM users WHERE phone=$1')) return Promise.resolve({ rows: [{ id: 1, name: 'Sam', email: 's@e.com', role: 'manager', phone: '+233241234567' }] })
       return Promise.resolve({ rows: [] })
     })
     // mock verifyCodeInternal to return ok
     sms.verifyCodeInternal = jest.fn().mockResolvedValue({ ok:true })
 
-    const req = { body: { phone:'+233111', code:'123456' } }
+    const req = { body: { phone:'+233241234567', code:'123456' } }
     const res = makeRes()
     await auth.verifyPhone(req, res)
-    expect(res._body).toMatchObject({ ok:true, user: { id: 1, name: 'Sam', email: 's@e.com', role: 'manager', phone: '+233111' } })
+    expect(res._body).toMatchObject({ ok:true, user: { id: 1, name: 'Sam', email: 's@e.com', role: 'manager', phone: '+233241234567' } })
     expect(res._body.token).toBeTruthy()
-    expect(db.query).toHaveBeenCalledWith(expect.stringContaining('UPDATE users SET phone_verified=true'), ['+233111'])
+    expect(db.query).toHaveBeenCalledWith(expect.stringContaining('UPDATE users SET phone_verified=true'), ['+233241234567'])
   })
 
   test('updateMe: updates name and password directly when contact details do not change', async ()=>{
     const currentHash = bcrypt.hashSync('OldPass123!', 10)
     db.query.mockImplementation((text, params)=>{
       if (text.startsWith('SELECT id,name,email,password,role,phone,phone_verified,deleted_at FROM users WHERE id=$1')) {
-        return Promise.resolve({ rows: [{ id: 1, name: 'Sam', email: 's@e.com', password: currentHash, role: 'manager', phone: '+233111', phone_verified: true }] })
+        return Promise.resolve({ rows: [{ id: 1, name: 'Sam', email: 's@e.com', password: currentHash, role: 'manager', phone: '+233241234567', phone_verified: true }] })
       }
-      if (text.startsWith('UPDATE users')) return Promise.resolve({ rows: [{ id: 1, name: 'Samuel', email: 's@e.com', role: 'manager', phone: '+233111', phone_verified: true, created_at: new Date().toISOString() }] })
+      if (text.startsWith('UPDATE users')) return Promise.resolve({ rows: [{ id: 1, name: 'Samuel', email: 's@e.com', role: 'manager', phone: '+233241234567', phone_verified: true, created_at: new Date().toISOString() }] })
       return Promise.resolve({ rows: [] })
     })
 
@@ -68,7 +68,7 @@ describe('authController.unit', ()=>{
       user: { id: 1 },
       body: {
         name: 'Samuel',
-        phone: '+233111',
+        phone: '+233241234567',
         currentPassword: 'OldPass123!',
         newPassword: 'NewPass123!'
       }
@@ -76,7 +76,7 @@ describe('authController.unit', ()=>{
     const res = makeRes()
     await auth.updateMe(req, res)
 
-    expect(res._body).toMatchObject({ name: 'Samuel', email: 's@e.com', phone: '+233111', password_updated: true, otp_required: false })
+    expect(res._body).toMatchObject({ name: 'Samuel', email: 's@e.com', phone: '+233241234567', password_updated: true, otp_required: false })
     const updateCall = db.query.mock.calls.find(([text]) => text.includes('UPDATE users'))
     expect(updateCall).toBeTruthy()
     expect(updateCall[1][1]).not.toBe('NewPass123!')
@@ -87,7 +87,7 @@ describe('authController.unit', ()=>{
     const currentHash = bcrypt.hashSync('OldPass123!', 10)
     db.query.mockImplementation((text)=>{
       if (text.startsWith('SELECT id,name,email,password,role,phone,phone_verified,deleted_at FROM users WHERE id=$1')) {
-        return Promise.resolve({ rows: [{ id: 1, name: 'Sam', email: 's@e.com', password: currentHash, role: 'manager', phone: '+233111', phone_verified: true }] })
+        return Promise.resolve({ rows: [{ id: 1, name: 'Sam', email: 's@e.com', password: currentHash, role: 'manager', phone: '+233241234567', phone_verified: true }] })
       }
       if (text.startsWith('SELECT id FROM users WHERE lower(email)=lower($1) AND id <> $2')) return Promise.resolve({ rows: [] })
       if (text.startsWith('SELECT id FROM users WHERE phone=$1 AND id <> $2')) return Promise.resolve({ rows: [] })
@@ -102,26 +102,26 @@ describe('authController.unit', ()=>{
       body: {
         name: 'Samuel',
         email: 'samuel@example.com',
-        phone: '+233222',
+        phone: '+233244567890',
         currentPassword: 'OldPass123!'
       }
     }
     const res = makeRes()
     await auth.updateMe(req, res)
 
-    expect(res._body).toMatchObject({ ok:true, otp_required:true, otp_phone: '+233222' })
-    expect(sms.generateAndSendCode).toHaveBeenCalledWith('+233222', 'profile_update')
+    expect(res._body).toMatchObject({ ok:true, otp_required:true, otp_phone: '+233244567890' })
+    expect(sms.generateAndSendCode).toHaveBeenCalledWith('+233244567890', 'profile_update')
   })
 
   test('verifyMeUpdate: applies staged account changes after OTP verification', async ()=>{
     const currentHash = bcrypt.hashSync('OldPass123!', 10)
     db.query.mockImplementation((text)=>{
       if (text.startsWith('SELECT id,user_id,name,email,phone,password_hash,otp_phone,expires_at FROM account_update_requests WHERE user_id=$1')) {
-        return Promise.resolve({ rows: [{ id: 9, user_id: 1, name: 'Samuel', email: 'samuel@example.com', phone: '+233222', password_hash: currentHash, otp_phone: '+233222', expires_at: new Date(Date.now() + 10000).toISOString() }] })
+        return Promise.resolve({ rows: [{ id: 9, user_id: 1, name: 'Samuel', email: 'samuel@example.com', phone: '+233244567890', password_hash: currentHash, otp_phone: '+233244567890', expires_at: new Date(Date.now() + 10000).toISOString() }] })
       }
       if (text.startsWith('SELECT id FROM users WHERE lower(email)=lower($1) AND id <> $2')) return Promise.resolve({ rows: [] })
       if (text.startsWith('SELECT id FROM users WHERE phone=$1 AND id <> $2')) return Promise.resolve({ rows: [] })
-      if (text.startsWith('UPDATE users')) return Promise.resolve({ rows: [{ id: 1, name: 'Samuel', email: 'samuel@example.com', role: 'manager', phone: '+233222', phone_verified: true, created_at: new Date().toISOString() }] })
+      if (text.startsWith('UPDATE users')) return Promise.resolve({ rows: [{ id: 1, name: 'Samuel', email: 'samuel@example.com', role: 'manager', phone: '+233244567890', phone_verified: true, created_at: new Date().toISOString() }] })
       if (text.startsWith('UPDATE account_update_requests SET verified=true')) return Promise.resolve({})
       return Promise.resolve({ rows: [] })
     })
@@ -131,15 +131,15 @@ describe('authController.unit', ()=>{
     const res = makeRes()
     await auth.verifyMeUpdate(req, res)
 
-    expect(res._body).toMatchObject({ ok:true, name: 'Samuel', email: 'samuel@example.com', phone: '+233222' })
-    expect(sms.verifyCodeInternal).toHaveBeenCalledWith('+233222', '123456', 'profile_update')
+    expect(res._body).toMatchObject({ ok:true, name: 'Samuel', email: 'samuel@example.com', phone: '+233244567890' })
+    expect(sms.verifyCodeInternal).toHaveBeenCalledWith('+233244567890', '123456', 'profile_update')
   })
 
   test('updateMe: rejects profile edits without current password', async ()=>{
     const currentHash = bcrypt.hashSync('OldPass123!', 10)
     db.query.mockImplementation((text)=>{
       if (text.startsWith('SELECT id,name,email,password,role,phone,phone_verified,deleted_at FROM users WHERE id=$1')) {
-        return Promise.resolve({ rows: [{ id: 1, name: 'Sam', email: 's@e.com', password: currentHash, role: 'manager', phone: '+233111', phone_verified: true }] })
+        return Promise.resolve({ rows: [{ id: 1, name: 'Sam', email: 's@e.com', password: currentHash, role: 'manager', phone: '+233241234567', phone_verified: true }] })
       }
       return Promise.resolve({ rows: [] })
     })
@@ -149,7 +149,7 @@ describe('authController.unit', ()=>{
       body: {
         name: 'Samuel',
         email: 'samuel@example.com',
-        phone: '+233111'
+        phone: '+233241234567'
       }
     }
     const res = makeRes()
