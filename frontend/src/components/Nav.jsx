@@ -74,7 +74,6 @@ const Nav = ()=>{
         </nav>
 
         <div className="nav-actions nav-right">
-          <button className="button-secondary sync-button" onClick={syncData} type="button">Sync data</button>
           {user ? (
             <div className="nav-account" ref={acctRef}>
               <button className="nav-account-toggle" onClick={() => setAcctOpen(s => !s)} aria-expanded={acctOpen} aria-label="Account menu">
@@ -109,7 +108,6 @@ const Nav = ()=>{
 
       {mobileOpen && (
         <div className="mobile-menu" role="menu" aria-hidden={!mobileOpen}>
-          <button className="button-secondary mobile-sync-button" type="button" onClick={syncData}>Sync data</button>
           <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`} onClick={() => setMobileOpen(false)}>Home</Link>
           {canViewDashboard && <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`} onClick={() => setMobileOpen(false)}>Dashboard</Link>}
           <Link to="/products" className={`nav-link ${location.pathname === '/products' ? 'active' : ''}`} onClick={() => setMobileOpen(false)}>Products</Link>
