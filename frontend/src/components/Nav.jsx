@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import api from '../services/api'
 
-const Nav = ()=>{
+const Nav = ({ sidebarOpen, onToggleSidebar })=>{
   const user = JSON.parse(localStorage.getItem('user') || 'null')
   const role = user?.role === 'owner' ? 'ceo' : user?.role
   const canViewAlerts = ['manager', 'ceo', 'admin'].includes(role)
   const canViewRequests = ['manager', 'ceo'].includes(role)
   const [alertCount, setAlertCount] = useState(0)
+  const [acctOpen, setAcctOpen] = useState(false)
+  const acctRef = useRef(null)
 
   useEffect(() => {
     const loadAlerts = async () => {
@@ -28,46 +30,94 @@ const Nav = ()=>{
     loadAlerts()
   }, [canViewAlerts, user])
 
+  useEffect(() => {
+    const onDoc = (e) => {
+      if (acctRef.current && !acctRef.current.contains(e.target)) setAcctOpen(false)
+    }
+    document.addEventListener('click', onDoc)
+    return () => document.removeEventListener('click', onDoc)
+  }, [])
+
   const logout = ()=>{ localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href='/login' }
   const location = useLocation()
   const hideLogout = location?.pathname === '/account'
   const canViewRecords = ['manager', 'ceo', 'admin'].includes(role)
   const canViewDashboard = ['manager', 'ceo', 'admin'].includes(role)
+
+  const closeSidebar = () => {
+    if (typeof onToggleSidebar === 'function' && window.innerWidth < 980) {
+      onToggleSidebar()
+    }
+  }
+
   return (
-    <nav className="topbar">
-      <div className="topbar-inner">
-        <Link to="/dashboard" className="brand">
+    <>
+      <header className="topbar">
+        <button className="hamburger-button" onClick={onToggleSidebar} aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'} aria-expanded={sidebarOpen}>
+          <span aria-hidden="true">☰</span>
+        </button>
+        <Link to="/dashboard" className="brand topbar-brand">
           <span className="brand-mark" aria-hidden="true" />
           <span className="brand-copy">
             <span>Store Management System</span>
             <span>Inventory control</span>
           </span>
         </Link>
-        <div className="nav-links">
-          <Link to="/">Home</Link>
-          {canViewDashboard && <Link to="/dashboard">Dashboard</Link>}
-          <Link to="/products">Products</Link>
-          {canViewRecords && <Link to="/records">Records</Link>}
-          {canViewRequests && <Link to="/requests">Request for approval</Link>}
-          {canViewAlerts && <Link to="/alerts">Alerts</Link>}
-        </div>
-        <div className="nav-actions">
-          {canViewAlerts && alertCount > 0 && <Link className="nav-chip" to="/alerts">Alerts {alertCount}</Link>}
-          {user ? (
-            <>
-              <Link className="nav-account-card" to="/account" aria-label="Open account details">
-                <span className="nav-account-label">Account</span>
+      </header>
+
+      <div className={`sidebar-overlay ${sidebarOpen ? 'is-visible' : ''}`} onClick={onToggleSidebar} aria-hidden="true" />
+
+      <aside className={`sidebar ${sidebarOpen ? 'is-open' : 'is-closed'}`}>
+        <Link to="/dashboard" className="brand sidebar-brand" onClick={closeSidebar}>
+          <span className="brand-mark" aria-hidden="true" />
+          <span className="brand-copy">
+            <span>Store Management System</span>
+            <span>Inventory control</span>
+          </span>
+        </Link>
+
+        <nav className="sidebar-nav" aria-label="Primary navigation">
+          <Link to="/" onClick={closeSidebar} className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>Home</Link>
+          {canViewDashboard && <Link to="/dashboard" onClick={closeSidebar} className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}>Dashboard</Link>}
+          <Link to="/products" onClick={closeSidebar} className={`nav-link ${location.pathname === '/products' ? 'active' : ''}`}>Products</Link>
+          {canViewRecords && <Link to="/records" onClick={closeSidebar} className={`nav-link ${location.pathname === '/records' ? 'active' : ''}`}>Records</Link>}
+          {canViewRequests && <Link to="/requests" onClick={closeSidebar} className={`nav-link ${location.pathname === '/requests' ? 'active' : ''}`}>Request for approval</Link>}
+          {canViewAlerts && <Link to="/alerts" onClick={closeSidebar} className={`nav-link nav-alert-link ${location.pathname === '/alerts' ? 'active' : ''}`}>Alerts{alertCount > 0 && <span className="badge">{alertCount}</span>}</Link>}
+        </nav>
+
+        <div className="sidebar-footer">
+        {user ? (
+          <div className="nav-account" ref={acctRef}>
+            <button className="nav-account-toggle" onClick={() => setAcctOpen(s => !s)} aria-expanded={acctOpen} aria-label="Account menu">
+              <span className="nav-account-badge">{user?.name?.charAt(0) || 'U'}</span>
+              <span className="nav-account-copy">
                 <span className="nav-account-name">{user.name}</span>
-                <span className="nav-account-role">Role: {role === 'ceo' ? 'CEO' : user.role}</span>
-              </Link>
-              {!hideLogout && <button className="button-secondary" onClick={logout}>Logout</button>}
-            </>
-          ) : (
-            <Link to="/login" className="button-primary">Login</Link>
-          )}
-        </div>
+                <span className="nav-account-role">{role === 'ceo' ? 'CEO' : user.role}</span>
+              </span>
+            </button>
+            {acctOpen && (
+              <div className="account-card-wrapper">
+                <div className="profile-card">
+                  <div className="profile-left">
+                    <div className="profile-avatar" aria-hidden>{user?.name?.charAt(0) || 'U'}</div>
+                    <div className="profile-info">
+                      <div className="profile-name">{user.name}</div>
+                      <div className="profile-role">{role === 'ceo' ? 'CEO' : user.role}</div>
+                    </div>
+                  </div>
+                  <div className="profile-status"><span className="status-dot online" /> Online</div>
+                  <Link to="/account" className="account-menu-item" onClick={() => { setAcctOpen(false); closeSidebar(); }}>View account</Link>
+                  <button className="logout-button" onClick={() => { setAcctOpen(false); logout(); }}>Logout</button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <Link to="/login" className="button-primary sidebar-login">Login</Link>
+        )}
       </div>
-    </nav>
+      </aside>
+    </>
   )
 }
 
