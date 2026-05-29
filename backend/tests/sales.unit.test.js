@@ -32,6 +32,22 @@ describe('salesController.unit', ()=>{
     expect(res._body).toHaveProperty('total')
   })
 
+  test('createSale allows amount-only sale for cashiers', async ()=>{
+    const mockClient = { query: jest.fn() }
+    mockClient.query.mockImplementation(async (text, params)=>{
+      if (text.startsWith('INSERT INTO sales')) return { rows:[{ id: 77, date: new Date().toISOString() }] }
+      return { rows: [] }
+    })
+    db.pool = { connect: jest.fn(async ()=> mockClient) }
+
+    const req = { user: { id: 9, role: 'casher' }, body: { amount: 123.45 } }
+    const res = makeRes()
+    await sales.createSale(req, res)
+    expect(res._status).toBe(201)
+    expect(res._body.saleId).toBe(77)
+    expect(res._body.total).toBe(123.45)
+  })
+
   test('listSalesDetails groups sale items under each sale', async ()=>{
     db.query.mockResolvedValue({
       rows: [

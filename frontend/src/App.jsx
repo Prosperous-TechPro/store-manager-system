@@ -8,6 +8,7 @@ import Account from './pages/Account'
 import Dashboard from './pages/Dashboard'
 import DashboardDetails from './pages/DashboardDetails'
 import AlertsDetails from './pages/AlertsDetails'
+import Sales from './pages/Sales'
 import Records from './pages/Records'
 import Alerts from './pages/Alerts'
 import Approvals from './pages/Approvals'
@@ -29,6 +30,7 @@ const App = () => {
   const canViewManagement = ['manager', 'ceo', 'admin'].includes(currentRole)
   const canViewAlerts = ['manager', 'ceo', 'admin'].includes(currentRole)
   const canViewRequests = ['manager', 'ceo'].includes(currentRole)
+  const canViewSales = ['casher', 'manager', 'saler', 'ceo', 'admin'].includes(currentRole)
   const location = useLocation()
 
   useEffect(() => {
@@ -62,6 +64,7 @@ const App = () => {
         <Route path="/requests" element={token ? (canViewRequests ? <Approvals /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
         <Route path="/approvals" element={<Navigate to="/requests" replace />} />
         <Route path="/products" element={token ? <Products /> : <Navigate to="/login" />} />
+        <Route path="/sales" element={token ? (canViewSales ? <Sales /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
         <Route path="/records" element={token ? (canViewManagement ? <Records /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

@@ -7,7 +7,13 @@ const Products = () => {
   const user = JSON.parse(localStorage.getItem('user') || 'null')
   const role = user?.role === 'owner' ? 'ceo' : user?.role
   const canManageProducts = ['manager', 'ceo'].includes(role)
-  const canDeleteProducts = role === 'ceo'
+  const isExpired = (expiryDate) => {
+    if (!expiryDate) return false
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return new Date(expiryDate).getTime() <= today.getTime()
+  }
+  const canDeleteProducts = (product) => role === 'ceo' || (role === 'manager' && isExpired(product.expiry_date))
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -116,7 +122,7 @@ const Products = () => {
                     <td>
                       <div className="table-actions">
                         {canManageProducts && <button className="button-secondary" onClick={()=>onEdit(p)}>Edit</button>}
-                        {canDeleteProducts && <button className="button-danger" onClick={()=>onDelete(p.id)}>Delete</button>}
+                        {canDeleteProducts(p) && <button className="button-danger" onClick={()=>onDelete(p.id)}>{role === 'manager' ? 'Remove expired' : 'Delete'}</button>}
                       </div>
                     </td>
                   </tr>

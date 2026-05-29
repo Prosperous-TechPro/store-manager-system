@@ -13,89 +13,29 @@ const normalizePhone = (phone) => {
 };
 
 const getHubtelUrl = () => {
-  return process.env.HUBTEL_API_URL || process.env.HUBTEL_SMS_BASE_URL || '';
+  return process.env.HUBTEL_API_URL || 'https://api.hubtel.com/v1/messages';
 };
 
 const buildHubtelRequest = (phone, content) => {
   const normalizedPhone = normalizePhone(phone);
   const baseUrl = getHubtelUrl();
-  if (!baseUrl) return null;
+  if (!baseUrl) {
+    throw new Error('Hubtel API URL is not configured');
+  }
+
+  const apiKey = process.env.HUBTEL_API_KEY;
+  if (!apiKey) {
+    throw new Error('Hubtel API key is not configured');
+  }
 
   const url = new URL(baseUrl);
-  const isQueryAuthEndpoint = /smsc\.hubtel\.com/i.test(url.hostname) || url.searchParams.has('clientid') || url.searchParams.has('clientsecret');
-
-  if (process.env.HUBTEL_API_KEY) {
-    return {
-      url: url.toString(),
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.HUBTEL_API_KEY}`,
-      },
-      body: {
-        to: normalizedPhone,
-        from: process.env.HUBTEL_SENDER || process.env.HUBTEL_SMS_FROM || 'STORE',
-        content,
-      },
-      method: 'post',
-    };
-  }
-
-  if (isQueryAuthEndpoint) {
-    if (process.env.HUBTEL_SMS_CLIENT_ID) url.searchParams.set('clientid', process.env.HUBTEL_SMS_CLIENT_ID);
-    if (process.env.HUBTEL_SMS_CLIENT_SECRET) url.searchParams.set('clientsecret', process.env.HUBTEL_SMS_CLIENT_SECRET);
-    if (process.env.HUBTEL_SMS_FROM || process.env.HUBTEL_SENDER) {
-      url.searchParams.set('from', process.env.HUBTEL_SENDER || process.env.HUBTEL_SMS_FROM || 'STORE');
-    }
-
-    return {
-      url: url.toString(),
-      headers: { 'Content-Type': 'application/json' },
-      body: {
-        to: normalizedPhone,
-        content,
-      },
-      method: 'post',
-    };
-  }
-
-  if (process.env.HUBTEL_BASIC_AUTH) {
-    const val = process.env.HUBTEL_BASIC_AUTH;
-    const authHeader = val.includes(':')
-      ? `Basic ${Buffer.from(val).toString('base64')}`
-      : val.toLowerCase().startsWith('basic ')
-        ? val
-        : `Basic ${val}`;
-    return {
-      url: url.toString(),
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: authHeader,
-      },
-      body: {
-        to: normalizedPhone,
-        from: process.env.HUBTEL_SENDER || process.env.HUBTEL_SMS_FROM || 'STORE',
-        content,
-      },
-      method: 'post',
-    };
-  }
-
-  if (process.env.HUBTEL_SMS_CLIENT_ID && process.env.HUBTEL_SMS_CLIENT_SECRET) {
-    return {
-      url: url.toString(),
-      headers: { 'Content-Type': 'application/json' },
-      body: {
-        to: normalizedPhone,
-        from: process.env.HUBTEL_SENDER || process.env.HUBTEL_SMS_FROM || 'STORE',
-        content,
-      },
-      method: 'post',
-    };
-  }
 
   return {
     url: url.toString(),
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
     body: {
       to: normalizedPhone,
       from: process.env.HUBTEL_SENDER || process.env.HUBTEL_SMS_FROM || 'STORE',
@@ -111,20 +51,8 @@ const queryWithClient = async (client, text, params) => {
 };
 
 const getAuthHeader = () => {
-  if (process.env.HUBTEL_API_KEY) return { Authorization: `Bearer ${process.env.HUBTEL_API_KEY}` };
-  if (process.env.HUBTEL_BASIC_AUTH) {
-    const val = process.env.HUBTEL_BASIC_AUTH;
-    if (val.includes(':')) {
-      return { Authorization: `Basic ${Buffer.from(val).toString('base64')}` };
-    }
-    if (val.toLowerCase().startsWith('basic ')) return { Authorization: val };
-    return { Authorization: `Basic ${val}` };
-  }
-  if (process.env.HUBTEL_SMS_CLIENT_ID && process.env.HUBTEL_SMS_CLIENT_SECRET) {
-    const creds = `${process.env.HUBTEL_SMS_CLIENT_ID}:${process.env.HUBTEL_SMS_CLIENT_SECRET}`;
-    return { Authorization: `Basic ${Buffer.from(creds).toString('base64')}` };
-  }
-  return {};
+  if (!process.env.HUBTEL_API_KEY) return {};
+  return { Authorization: `Bearer ${process.env.HUBTEL_API_KEY}` };
 };
 
 const getLatestCodeRecord = async (phone, purpose, dbClient = null) => {
@@ -224,6 +152,9 @@ const sendVerification = async (req, res) => {
     return res.json({ ok: true });
   } catch (err) {
     console.error(err);
+    if (String(err.message || '').includes('Hubtel API key is not configured')) {
+      return res.status(500).json({ error: 'SMS is not configured' });
+    }
     res.status(500).json({ error: 'Failed to send code' });
   }
 };

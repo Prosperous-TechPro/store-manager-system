@@ -25,7 +25,7 @@ describe('authController.unit', ()=>{
       if (text.startsWith('INSERT INTO users')) return Promise.resolve({ rows: [{ id:1, name: params[0], email: params[1], role: params[3], phone: params[4], phone_verified:false, approved:false }] })
       return Promise.resolve({ rows: [] })
     })
-    sms.generateAndSendCode.mockResolvedValue({ ok:true, sent:false, code:'123456' })
+    sms.generateAndSendCode.mockResolvedValue({ ok:true, sent:true, code:'123456' })
 
     const req = { body: { name:'Sam', email:'s@e.com', password:'TestPass123!', phone:'+233241234567' } }
     const res = makeRes()
@@ -45,7 +45,7 @@ describe('authController.unit', ()=>{
       if (text.startsWith('INSERT INTO users')) return Promise.resolve({ rows: [{ id:1, name: params[0], email: params[1], role: params[3], phone: params[4], phone_verified:false, approved:true }] })
       return Promise.resolve({ rows: [] })
     })
-    sms.generateAndSendCode.mockResolvedValue({ ok:true, sent:false, code:'123456' })
+    sms.generateAndSendCode.mockResolvedValue({ ok:true, sent:true, code:'123456' })
 
     const req = { body: { name:'Chief', email:'ceo@example.com', password:'TestPass123!', phone:'+233241234567', role:'ceo' } }
     const res = makeRes()

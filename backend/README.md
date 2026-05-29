@@ -22,9 +22,11 @@ SMS verification (Hubtel)
 - POST /api/sms/verify { phone, code } -> verify last sent code
 
 Configure in `.env`:
-- `HUBTEL_API_URL` - Hubtel send-message endpoint
-- `HUBTEL_API_KEY` or `HUBTEL_BASIC_AUTH` - credentials
+- `HUBTEL_API_URL` - Hubtel send-message endpoint (defaults to `https://api.hubtel.com/v1/messages`)
+- `HUBTEL_API_KEY` - Hubtel API key used for Bearer auth
 - `HUBTEL_SENDER` - optional sender name
+
+Only the API-key flow is supported now; remove older Hubtel auth variables to avoid misconfiguration.
 
 Notes:
 - Secure JWT_SECRET in production
@@ -36,3 +38,17 @@ Render deployment:
 - Set `DATABASE_URL`, `JWT_SECRET`, and `CORS_ORIGIN` in Render environment variables.
 - Use `npm start` as the start command.
 - Set `CORS_ORIGIN` to `https://store-manager-systemfrontend.vercel.app` for production, and add any extra preview URLs you use.
+
+Env rotation and safe secret handling
+-----------------------------------
+
+- Never commit real secret values (for example `DATABASE_URL`, `JWT_SECRET`, or `HUBTEL_API_KEY`) to the repository. Keep `.env` listed in `.gitignore`.
+- To rotate secrets safely:
+	1. Generate a new secret in your hosting provider (Render, Vercel, GitHub Actions, etc.) or your secret manager.
+	2. Update the runtime environment variables in the deployment platform (do not edit `.env` in the repo with real values).
+	3. Update `backend/.env.example` with placeholder values and a short note that secrets must be set in the environment.
+	4. Create a PR that documents the rotation (which variables were rotated and when) but never contains secret values.
+
+Recommended: use GitHub Actions or your cloud provider's secret store (Render environment variables, Vercel Environment, or GitHub Secrets) to inject secrets at deploy time.
+
+If you want, I can generate a safe rotated `.env.example` and create a branch/PR with documentation so ops can update secrets via the hosting UI without ever exposing values in Git history.

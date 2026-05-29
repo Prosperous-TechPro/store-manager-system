@@ -57,6 +57,16 @@ const updateProduct = async (req, res) => {
 const deleteProduct = async (req, res) => {
   const { id } = req.params;
   try {
+    const result = await db.query('SELECT id, expiry_date FROM products WHERE id=$1', [id]);
+    const product = result.rows[0];
+    if (!product) return res.status(404).json({ error: 'Not found' });
+
+    const role = req.user?.role === 'owner' ? 'ceo' : req.user?.role;
+    const isExpired = product.expiry_date ? new Date(product.expiry_date) <= new Date() : false;
+    if (role === 'manager' && !isExpired) {
+      return res.status(403).json({ error: 'Managers can only remove expired products' });
+    }
+
     await db.query('DELETE FROM products WHERE id=$1', [id]);
     res.status(204).send();
   } catch (err) {

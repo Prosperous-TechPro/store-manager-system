@@ -84,21 +84,27 @@ const register = async (req, res) => {
     }
     const hash = await bcrypt.hash(password, 10);
     const approved = normalizedRole === 'ceo';
-    const client = await db.pool.connect();
+    const client = db.pool && typeof db.pool.connect === 'function' ? await db.pool.connect() : null;
+    const tx = client || {
+      query: (...args) => db.query(...args),
+      release: () => {},
+    };
     try {
-      await client.query('BEGIN');
-      const result = await client.query(
+      await tx.query('BEGIN');
+      const result = await tx.query(
         'INSERT INTO users(name,email,password,role,phone,phone_verified,approved) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id,name,email,role,phone,phone_verified,approved',
         [name, normalizedEmail, hash, normalizedRole, normalizedPhone, false, approved]
       );
       const user = result.rows[0];
 
-      const smsResult = await sms.generateAndSendCode(normalizedPhone, 'signup', { dbClient: client });
+      const smsResult = client
+        ? await sms.generateAndSendCode(normalizedPhone, 'signup', { dbClient: client })
+        : await sms.generateAndSendCode(normalizedPhone, 'signup');
       if (!smsResult.sent) {
         throw new Error(smsResult.reused ? 'A verification code is already active for this phone' : 'Failed to send signup SMS');
       }
 
-      await client.query('COMMIT');
+      await tx.query('COMMIT');
       return res.status(201).json({
         ...user,
         verification_required: true,
@@ -106,11 +112,11 @@ const register = async (req, res) => {
         approval_required_by: !approved ? (normalizedRole === 'manager' ? 'ceo' : 'manager_or_ceo') : null,
       });
     } catch (sendErr) {
-      await client.query('ROLLBACK');
+      await tx.query('ROLLBACK');
       console.warn('Failed to send signup SMS', sendErr.message || sendErr);
       return res.status(502).json({ error: 'We could not send the verification SMS. Account was not created.' });
     } finally {
-      client.release();
+      tx.release();
     }
   } catch (err) {
     console.error(err);

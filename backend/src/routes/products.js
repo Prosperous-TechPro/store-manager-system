@@ -7,6 +7,6 @@ router.get('/', authenticate, listProducts);
 router.get('/:id', authenticate, getProduct);
 router.post('/', authenticate, authorize(['manager','ceo']), createProduct);
 router.put('/:id', authenticate, authorize(['manager','ceo']), updateProduct);
-router.delete('/:id', authenticate, authorize(['ceo']), deleteProduct);
+router.delete('/:id', authenticate, authorize(['manager','ceo']), deleteProduct);
 
 module.exports = router;

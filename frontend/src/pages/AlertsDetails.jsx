@@ -23,12 +23,32 @@ const metricEmptyMessages = {
 
 const AlertsDetails = () => {
   const { metricId } = useParams()
+  const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
+  const role = currentUser?.role === 'owner' ? 'ceo' : currentUser?.role
+  const canRemoveExpired = ['manager', 'ceo'].includes(role)
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState([])
   const [summary, setSummary] = useState('')
   const [error, setError] = useState('')
 
   const formatCurrency = (value) => Number.parseFloat(value || 0).toFixed(2)
+  const isExpired = (expiryDate) => {
+    if (!expiryDate) return false
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return new Date(expiryDate).getTime() <= today.getTime()
+  }
+
+  const removeExpiredProduct = async (productId, productName) => {
+    if (!confirm(`Remove expired product ${productName}?`)) return
+    setError('')
+    try {
+      await api.del(`/products/${productId}`)
+      await load()
+    } catch (removeError) {
+      setError(removeError.message || 'Failed to remove product')
+    }
+  }
 
   const buildProductMeta = (product, extraLines = []) => [
     `Barcode: ${product.barcode || '-'}`,
@@ -82,6 +102,7 @@ const AlertsDetails = () => {
               item.expiry_date ? `Expired on ${new Date(item.expiry_date).toLocaleDateString()}` : 'Expired item',
               'Status: expired',
             ]).join(' | '),
+            action: canRemoveExpired && isExpired(item.expiry_date) ? { label: role === 'manager' ? 'Remove expired' : 'Delete', productId: item.id, productName: item.name } : null,
           })))
           break
         case 'missing':
@@ -183,6 +204,11 @@ const AlertsDetails = () => {
                   <li key={item.key}>
                     <strong>{item.label}</strong>
                     <div className="section-note">{item.meta}</div>
+                    {item.action && (
+                      <button type="button" className="button-danger" onClick={() => removeExpiredProduct(item.action.productId, item.action.productName)} style={{ marginTop: 10 }}>
+                        {item.action.label}
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
