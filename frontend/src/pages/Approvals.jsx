@@ -6,6 +6,9 @@ const Approvals = () => {
   const [error, setError] = useState('')
   const [users, setUsers] = useState([])
   const [approvingId, setApprovingId] = useState(null)
+  const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
+  const currentRole = currentUser?.role === 'owner' ? 'ceo' : currentUser?.role
+  const canApprove = ['manager', 'ceo'].includes(currentRole)
 
   const loadPending = async () => {
     setLoading(true)
@@ -73,9 +76,13 @@ const Approvals = () => {
                   <td>{user.phone_verified ? <span className="tag tag-success">Yes</span> : <span className="tag tag-warn">No</span>}</td>
                   <td>{user.created_at ? new Date(user.created_at).toLocaleString() : '-'}</td>
                   <td>
-                    <button className="button-primary" onClick={() => approveUser(user)} disabled={approvingId === user.id}>
-                      {approvingId === user.id ? 'Approving...' : 'Approve'}
-                    </button>
+                    {canApprove ? (
+                      <button className="button-primary" onClick={() => approveUser(user)} disabled={approvingId === user.id}>
+                        {approvingId === user.id ? 'Approving...' : 'Approve'}
+                      </button>
+                    ) : (
+                      <span className="section-note">Insufficient privileges</span>
+                    )}
                   </td>
                 </tr>
               ))}
