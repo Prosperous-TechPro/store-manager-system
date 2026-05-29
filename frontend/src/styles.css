@@ -284,6 +284,27 @@ button:disabled { cursor: not-allowed; opacity: 0.7; transform: none; }
 
 .button-primary { color: #02111e; background: linear-gradient(135deg, var(--primary), #8ff7d1); box-shadow: 0 14px 30px rgba(38, 208, 206, 0.24); display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
 .button-secondary { color: var(--text); background: rgba(255,255,255,0.06); border: 1px solid var(--border); }
+.button-primary:hover,
+.button-secondary:hover,
+.nav-chip-link:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 16px 32px rgba(0, 0, 0, 0.22);
+	filter: brightness(1.03);
+}
+.button-primary:active,
+.button-secondary:active,
+.nav-chip-link:active {
+	transform: translateY(-1px);
+	box-shadow: 0 10px 20px rgba(0, 0, 0, 0.16);
+}
+.button-primary:focus-visible,
+.button-secondary:focus-visible,
+.nav-chip-link:focus-visible {
+	outline: 3px solid rgba(38, 208, 206, 0.42);
+	outline-offset: 3px;
+	transform: translateY(-1px);
+	box-shadow: 0 16px 32px rgba(0, 0, 0, 0.18);
+}
 .button-danger { color: #fff; background: linear-gradient(135deg, #ff7a59, var(--danger)); }
 
 
