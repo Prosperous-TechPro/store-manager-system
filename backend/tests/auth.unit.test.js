@@ -39,7 +39,9 @@ describe('authController.unit', ()=>{
 
   test('register: auto-approves CEO accounts', async ()=>{
     db.query.mockImplementation((text, params)=>{
-      if (text.startsWith('SELECT id FROM users WHERE email')) return Promise.resolve({ rows: [] })
+      if (text.startsWith('SELECT id FROM users WHERE lower(email)=lower($1)')) return Promise.resolve({ rows: [] })
+      if (text.startsWith('SELECT id FROM users WHERE phone=$1')) return Promise.resolve({ rows: [] })
+      if (text.startsWith("SELECT COUNT(*)::int AS total FROM users WHERE deleted_at IS NULL AND lower(role) IN ('ceo','owner')")) return Promise.resolve({ rows: [{ total: 2 }] })
       if (text.startsWith('INSERT INTO users')) return Promise.resolve({ rows: [{ id:1, name: params[0], email: params[1], role: params[3], phone: params[4], phone_verified:false, approved:true }] })
       return Promise.resolve({ rows: [] })
     })
@@ -53,6 +55,25 @@ describe('authController.unit', ()=>{
     expect(res._body.approved).toBe(true)
     expect(res._body.approval_required).toBe(false)
     expect(sms.generateAndSendCode).toHaveBeenCalledWith('+233241234567','signup')
+  })
+
+  test('register: blocks CEO account when 3 CEO accounts already exist', async ()=>{
+    db.query.mockImplementation((text)=>{
+      if (text.startsWith('SELECT id FROM users WHERE lower(email)=lower($1)')) return Promise.resolve({ rows: [] })
+      if (text.startsWith('SELECT id FROM users WHERE phone=$1')) return Promise.resolve({ rows: [] })
+      if (text.startsWith("SELECT COUNT(*)::int AS total FROM users WHERE deleted_at IS NULL AND lower(role) IN ('ceo','owner')")) {
+        return Promise.resolve({ rows: [{ total: 3 }] })
+      }
+      return Promise.resolve({ rows: [] })
+    })
+
+    const req = { body: { name:'Chief Two', email:'ceo2@example.com', password:'TestPass123!', phone:'+233241234567', role:'ceo' } }
+    const res = makeRes()
+    await auth.register(req, res)
+
+    expect(res._status).toBe(403)
+    expect(res._body).toMatchObject({ error: 'cant create account, consult the manager' })
+    expect(sms.generateAndSendCode).not.toHaveBeenCalled()
   })
 
   test('verifyPhone: verifies code and updates user', async ()=>{

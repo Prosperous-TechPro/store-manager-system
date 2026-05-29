@@ -32,10 +32,13 @@ const approveUser = async (req, res) => {
   if (!targetId) return res.status(400).json({ error: 'Valid user id is required' });
 
   try {
-    const targetResult = await db.query('SELECT id, approved, deleted_at FROM users WHERE id=$1', [targetId]);
+    const targetResult = await db.query('SELECT id, role, approved, deleted_at FROM users WHERE id=$1', [targetId]);
     const target = targetResult.rows[0];
     if (!target) return res.status(404).json({ error: 'User not found' });
     if (target.deleted_at) return res.status(409).json({ error: 'User has been deleted' });
+    if (String(target.role || '').toLowerCase() === 'manager' && String(req.user.role || '').toLowerCase() !== 'ceo') {
+      return res.status(403).json({ error: 'Manager accounts must be approved by CEO' });
+    }
 
     const result = await db.query(
       `UPDATE users

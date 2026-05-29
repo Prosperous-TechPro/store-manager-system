@@ -41,6 +41,14 @@ const isValidEmail = (email) => EMAIL_REGEX.test(String(email || '').trim());
 
 const isValidPhone = (phone) => GH_PHONE_REGEX.test(String(phone || '').trim().replace(/\s+/g, ''));
 
+const getApprovalError = (role) => {
+  const normalizedRole = normalizeRole(role);
+  if (normalizedRole === 'manager') {
+    return 'Manager account is waiting for CEO approval';
+  }
+  return 'Account is waiting for manager or CEO approval';
+};
+
 const register = async (req, res) => {
   const { name, email, password, role = 'casher', phone } = req.body;
   if (!name || !email || !password || !phone) return res.status(400).json({ error: 'Name, email, password, and phone are required' });
@@ -65,6 +73,15 @@ const register = async (req, res) => {
     if (userExists.rows.length) return res.status(409).json({ error: 'Email already registered' });
     const phoneExists = await db.query('SELECT id FROM users WHERE phone=$1', [normalizedPhone]);
     if (phoneExists.rows.length) return res.status(409).json({ error: 'Phone number already registered' });
+    if (normalizedRole === 'ceo') {
+      const ceoCountResult = await db.query(
+        "SELECT COUNT(*)::int AS total FROM users WHERE deleted_at IS NULL AND lower(role) IN ('ceo','owner')"
+      );
+      const ceoCount = ceoCountResult.rows[0]?.total || 0;
+      if (ceoCount >= 3) {
+        return res.status(403).json({ error: 'cant create account, consult the manager' });
+      }
+    }
     const hash = await bcrypt.hash(password, 10);
     const approved = normalizedRole === 'ceo';
     const result = await db.query(
@@ -81,6 +98,7 @@ const register = async (req, res) => {
       ...user,
       verification_required: true,
       approval_required: !approved,
+      approval_required_by: !approved ? (normalizedRole === 'manager' ? 'ceo' : 'manager_or_ceo') : null,
     });
   } catch (err) {
     console.error(err);
@@ -98,7 +116,7 @@ const login = async (req, res) => {
     const user = result.rows[0];
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
     if (user.deleted_at) return res.status(403).json({ error: 'Account has been deleted' });
-    if (!user.approved) return res.status(403).json({ error: 'Account is waiting for manager or CEO approval', approval_required: true });
+    if (!user.approved) return res.status(403).json({ error: getApprovalError(user.role), approval_required: true });
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
     const session = issueAuthSession(user);
@@ -123,7 +141,7 @@ const verifyPhone = async (req, res) => {
     if (!user) return res.status(404).json({ error: 'Account not found' });
     if (!user.approved) {
       return res.status(403).json({
-        error: 'Account is waiting for manager or CEO approval',
+        error: getApprovalError(user.role),
         approval_required: true,
       });
     }
@@ -351,7 +369,7 @@ const resetPassword = async (req, res) => {
     const user = result.rows[0];
     if (!user) return res.status(404).json({ error: 'Account not found' });
     if (user.deleted_at) return res.status(403).json({ error: 'Account has been deleted' });
-    if (!user.approved) return res.status(403).json({ error: 'Account is waiting for manager or CEO approval', approval_required: true });
+    if (!user.approved) return res.status(403).json({ error: getApprovalError(user.role), approval_required: true });
     if (!user.phone) return res.status(400).json({ error: 'No phone number available for this account' });
     const r = await sms.verifyCodeInternal(user.phone, code, 'password_reset');
     if (!r.ok) return res.status(400).json({ error: r.reason || 'Invalid code' });
