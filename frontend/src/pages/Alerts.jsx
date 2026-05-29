@@ -16,12 +16,12 @@ const Alerts = () => {
       setError('')
       try {
         const [sales, expiry, missing] = await Promise.all([
-          api.get('/sales'),
+          api.get('/sales/details'),
           api.get('/reports/expiry'),
           api.get('/reports/missing'),
         ])
         setSalesAlerts(Array.isArray(sales) ? sales : [])
-        setSalesTotal(sales.reduce((sum, sale) => sum + parseFloat(sale.total_amount || 0), 0))
+        setSalesTotal(sales.reduce((sum, sale) => sum + Number.parseFloat(sale.total_amount || 0), 0))
         setExpiryAlerts(Array.isArray(expiry) ? expiry : [])
         setMissingAlerts(Array.isArray(missing) ? missing : [])
       } catch (err) {
@@ -45,7 +45,8 @@ const Alerts = () => {
         items: salesAlerts.map((sale) => ({
           key: sale.id,
           label: sale.date ? new Date(sale.date).toLocaleString() : `Sale #${sale.id}`,
-          meta: `Total amount: ${Number.parseFloat(sale.total_amount || 0).toFixed(2)}`,
+          meta: `Cashier: ${sale.cashier_name || '-'} | Total amount: ${Number.parseFloat(sale.total_amount || 0).toFixed(2)}`,
+          items: Array.isArray(sale.items) ? sale.items : [],
         })),
       }
     }
@@ -57,7 +58,7 @@ const Alerts = () => {
         items: expiredItems.map((item) => ({
           key: item.id,
           label: item.name,
-          meta: item.expiry_date ? `Expired on ${new Date(item.expiry_date).toLocaleDateString()}` : 'Expired item',
+          meta: `${item.expiry_date ? `Expired on ${new Date(item.expiry_date).toLocaleDateString()}` : 'Expired item'} | Qty: ${item.quantity ?? '-'}`,
         })),
       }
     }
@@ -69,7 +70,7 @@ const Alerts = () => {
         items: missingAlerts.map((item) => ({
           key: item.id,
           label: item.product_name || 'Product',
-          meta: `Expected: ${item.expected ?? '-'} | Actual: ${item.actual ?? '-'} | Difference: ${item.difference ?? '-'}`,
+          meta: `Expected: ${item.expected ?? '-'} | Actual: ${item.actual ?? '-'} | Difference: ${item.difference ?? '-'} | Loss value: ${item.loss_value ?? '-'}`,
         })),
       }
     }
@@ -153,6 +154,15 @@ const Alerts = () => {
                 <li key={item.key}>
                   <strong>{item.label}</strong>
                   <div className="section-note">{item.meta}</div>
+                  {selectedMetric === 'sales' && item.items?.length ? (
+                    <ul className="detail-list">
+                      {item.items.map((line) => (
+                        <li key={line.item_id}>
+                          {line.product_name} - Qty {line.quantity}, price {Number.parseFloat(line.price || 0).toFixed(2)}, total {Number.parseFloat(line.line_total || 0).toFixed(2)}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                 </li>
               ))}
             </ul>

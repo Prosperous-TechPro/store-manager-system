@@ -31,4 +31,46 @@ describe('salesController.unit', ()=>{
     expect(res._body).toHaveProperty('saleId')
     expect(res._body).toHaveProperty('total')
   })
+
+  test('listSalesDetails groups sale items under each sale', async ()=>{
+    db.query.mockResolvedValue({
+      rows: [
+        {
+          sale_id: 10,
+          user_id: 7,
+          cashier_name: 'Sam',
+          total_amount: '25.00',
+          date: '2026-05-29T12:00:00.000Z',
+          item_id: 1,
+          quantity: 2,
+          price: '5.00',
+          product_id: 3,
+          product_name: 'Soap',
+          expiry_date: '2026-06-01',
+        },
+        {
+          sale_id: 10,
+          user_id: 7,
+          cashier_name: 'Sam',
+          total_amount: '25.00',
+          date: '2026-05-29T12:00:00.000Z',
+          item_id: 2,
+          quantity: 3,
+          price: '5.00',
+          product_id: 4,
+          product_name: 'Rice',
+          expiry_date: '2026-07-01',
+        },
+      ]
+    })
+
+    const req = { user: { id: 7, role: 'manager' } }
+    const res = makeRes()
+    await sales.listSalesDetails(req, res)
+
+    expect(res._body).toHaveLength(1)
+    expect(res._body[0]).toMatchObject({ id: 10, total_amount: '25.00', cashier_name: 'Sam' })
+    expect(res._body[0].items).toHaveLength(2)
+    expect(res._body[0].items[0]).toMatchObject({ product_name: 'Soap', quantity: 2, line_total: 10 })
+  })
 })

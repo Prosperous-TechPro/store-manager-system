@@ -40,4 +40,60 @@ const listSales = async (req, res) => {
   }
 };
 
-module.exports = { createSale, listSales };
+const listSalesDetails = async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT
+         s.id AS sale_id,
+         s.user_id,
+         s.total_amount,
+         s.date,
+         u.name AS cashier_name,
+         si.id AS item_id,
+         si.quantity,
+         si.price,
+         p.id AS product_id,
+         p.name AS product_name,
+         p.expiry_date
+       FROM sales s
+       LEFT JOIN users u ON u.id = s.user_id
+       LEFT JOIN sale_items si ON si.sale_id = s.id
+       LEFT JOIN products p ON p.id = si.product_id
+       ORDER BY s.date DESC, si.id ASC
+       LIMIT 300`
+    );
+
+    const groupedSales = new Map();
+    for (const row of result.rows) {
+      if (!groupedSales.has(row.sale_id)) {
+        groupedSales.set(row.sale_id, {
+          id: row.sale_id,
+          user_id: row.user_id,
+          cashier_name: row.cashier_name,
+          total_amount: row.total_amount,
+          date: row.date,
+          items: [],
+        });
+      }
+
+      if (row.item_id) {
+        groupedSales.get(row.sale_id).items.push({
+          item_id: row.item_id,
+          product_id: row.product_id,
+          product_name: row.product_name,
+          quantity: row.quantity,
+          price: row.price,
+          line_total: Number(row.price || 0) * Number(row.quantity || 0),
+          expiry_date: row.expiry_date,
+        });
+      }
+    }
+
+    res.json(Array.from(groupedSales.values()));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+module.exports = { createSale, listSales, listSalesDetails };
