@@ -158,10 +158,10 @@ const Records = () => {
         <div className="modal">
           <div className="modal-body">
             <h2 className="modal-title">Delete user</h2>
-            <p className="section-note">You are deleting {deleteTarget.name} ({deleteTarget.email}). Explain why this account is being removed.</p>
+            <p className="section-note">You are deleting {deleteTarget.name} ({deleteTarget.email}). A reason is required before this user can be removed.</p>
             <form onSubmit={confirmDelete} className="form-grid">
               <div className="form-field">
-                <label>Delete reason</label>
+                <label>Delete reason <span className="helper-text">Required</span></label>
                 <textarea value={deleteReason} onChange={(e) => setDeleteReason(e.target.value)} rows={4} disabled={deleting} />
               </div>
               {error && <div className="error-banner">{error}</div>}

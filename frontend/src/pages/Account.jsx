@@ -66,14 +66,10 @@ const Account = () => {
       return
     }
 
-    // Require current password only when changing name or password.
-    // Email/phone-only changes will trigger the OTP flow on the server.
-    const nameOrPasswordChanged = (
-      form.name.trim() !== initialProfile.name ||
-      Boolean(form.newPassword)
-    )
-    if (nameOrPasswordChanged && !form.currentPassword) {
-      setError('Current password is required to confirm name or password changes')
+    // Only password changes require the current password.
+    // Email/phone changes are confirmed by OTP on the server.
+    if (form.newPassword && !form.currentPassword) {
+      setError('Current password is required to confirm password changes')
       return
     }
     if (form.newPassword) {
@@ -240,7 +236,7 @@ const Account = () => {
                 </div>
                 <div className="form-field">
                   <label>Current password</label>
-                  <input type="password" value={form.currentPassword} onChange={(e) => change('currentPassword', e.target.value)} disabled={saving} placeholder="Required to save any changes" />
+                  <input type="password" value={form.currentPassword} onChange={(e) => change('currentPassword', e.target.value)} disabled={saving} placeholder="Required only for password changes" />
                 </div>
                 <div className="form-field">
                   <label>New password</label>

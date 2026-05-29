@@ -11,6 +11,8 @@ const Products = () => {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState(null)
+  const [searchInput, setSearchInput] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
 
   const load = async ()=>{
     setLoading(true)
@@ -37,6 +39,32 @@ const Products = () => {
     }
   }
 
+  const onSearch = (event) => {
+    event.preventDefault()
+    setSearchQuery(searchInput.trim())
+  }
+
+  const onClearSearch = () => {
+    setSearchInput('')
+    setSearchQuery('')
+  }
+
+  const filteredProducts = products.filter((product) => {
+    if (!searchQuery) return true
+    const haystack = [
+      product.name,
+      product.barcode,
+      product.category,
+      product.supplier_name,
+      product.expiry_date,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+
+    return haystack.includes(searchQuery.toLowerCase())
+  })
+
   return (
     <div className="page">
       <section className="page-header">
@@ -45,7 +73,20 @@ const Products = () => {
           <h1 className="hero-title" style={{ fontSize: '2.1rem', marginTop: 6 }}>Products</h1>
           <p className="hero-subtitle">Add, review, and maintain your store catalogue in one clean view.</p>
         </div>
-        <div className="section-actions">
+        <div className="section-actions products-actions">
+          <form className="search-bar" onSubmit={onSearch}>
+            <input
+              type="search"
+              placeholder="Search products by name, barcode, supplier, category..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              aria-label="Search products"
+            />
+            <button className="button-secondary search-button" type="submit">Search</button>
+            {searchQuery && (
+              <button className="button-secondary search-button" type="button" onClick={onClearSearch}>Clear</button>
+            )}
+          </form>
           {canManageProducts ? (
             <button className="button-primary" onClick={onCreate}>Add Product</button>
           ) : (
@@ -56,13 +97,13 @@ const Products = () => {
 
       <div className="table-card">
         {loading ? <div className="loading-state">Loading products...</div> : (
-          products.length ? (
+          filteredProducts.length ? (
             <table>
               <thead>
                 <tr><th>Name</th><th>Qty</th><th>Expiry</th><th>Supplier</th><th>Actions</th></tr>
               </thead>
               <tbody>
-                {products.map(p=> (
+                {filteredProducts.map(p=> (
                   <tr key={p.id}>
                     <td>{p.name}</td>
                     <td><span className={p.quantity <= (p.reorder_level || 0) ? 'tag tag-warn' : 'tag tag-success'}>{p.quantity}</span></td>
@@ -79,7 +120,11 @@ const Products = () => {
               </tbody>
             </table>
           ) : (
-            <div className="empty-state">No products found. Add the first item to start your inventory.</div>
+            <div className="empty-state">
+              {searchQuery
+                ? `No products matched "${searchQuery}".`
+                : 'No products found. Add the first item to start your inventory.'}
+            </div>
           )
         )}
       </div>

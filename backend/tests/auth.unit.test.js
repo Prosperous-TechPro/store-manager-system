@@ -216,7 +216,34 @@ describe('authController.unit', ()=>{
     expect(sms.verifyCodeInternal).toHaveBeenCalledWith('+233241234567', '123456', 'password_reset')
   })
 
-  test('updateMe: rejects profile edits without current password', async ()=>{
+  test('updateMe: allows name changes without current password', async ()=>{
+    const currentHash = bcrypt.hashSync('OldPass123!', 10)
+    db.query.mockImplementation((text)=>{
+      if (text.startsWith('SELECT id,name,email,password,role,phone,phone_verified,deleted_at FROM users WHERE id=$1')) {
+        return Promise.resolve({ rows: [{ id: 1, name: 'Sam', email: 's@e.com', password: currentHash, role: 'manager', phone: '+233241234567', phone_verified: true }] })
+      }
+      if (text.startsWith('UPDATE users')) {
+        return Promise.resolve({ rows: [{ id: 1, name: 'Samuel', email: 's@e.com', role: 'manager', phone: '+233241234567', phone_verified: true, created_at: new Date().toISOString() }] })
+      }
+      return Promise.resolve({ rows: [] })
+    })
+
+    const req = {
+      user: { id: 1 },
+      body: {
+        name: 'Samuel',
+        email: 's@e.com',
+        phone: '+233241234567'
+      }
+    }
+    const res = makeRes()
+    await auth.updateMe(req, res)
+
+    expect(res._body).toMatchObject({ name: 'Samuel', email: 's@e.com', phone: '+233241234567', otp_required: false })
+    expect(res._body.error).toBeUndefined()
+  })
+
+  test('updateMe: still requires current password for password changes', async ()=>{
     const currentHash = bcrypt.hashSync('OldPass123!', 10)
     db.query.mockImplementation((text)=>{
       if (text.startsWith('SELECT id,name,email,password,role,phone,phone_verified,deleted_at FROM users WHERE id=$1')) {
@@ -228,15 +255,16 @@ describe('authController.unit', ()=>{
     const req = {
       user: { id: 1 },
       body: {
-        name: 'Samuel',
-        email: 'samuel@example.com',
-        phone: '+233241234567'
+        name: 'Sam',
+        email: 's@e.com',
+        phone: '+233241234567',
+        newPassword: 'NewPass123!'
       }
     }
     const res = makeRes()
     await auth.updateMe(req, res)
 
     expect(res._status).toBe(400)
-    expect(res._body).toMatchObject({ error: 'Current password is required to confirm name or password changes' })
+    expect(res._body).toMatchObject({ error: 'Current password is required to confirm password changes' })
   })
 })

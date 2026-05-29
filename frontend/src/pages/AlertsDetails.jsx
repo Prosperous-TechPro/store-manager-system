@@ -27,6 +27,20 @@ const AlertsDetails = () => {
   const [summary, setSummary] = useState('')
   const [error, setError] = useState('')
 
+  const formatCurrency = (value) => Number.parseFloat(value || 0).toFixed(2)
+
+  const buildProductMeta = (product, extraLines = []) => [
+    `Barcode: ${product.barcode || '-'}`,
+    `Category: ${product.category || '-'}`,
+    `Quantity: ${product.quantity ?? 0}`,
+    `Reorder level: ${product.reorder_level ?? 0}`,
+    `Cost price: ${formatCurrency(product.cost_price)}`,
+    `Selling price: ${formatCurrency(product.selling_price)}`,
+    `Supplier: ${product.supplier_name || '-'}`,
+    product.expiry_date ? `Expiry date: ${new Date(product.expiry_date).toLocaleDateString()}` : 'Expiry date: -',
+    ...extraLines,
+  ]
+
   useEffect(() => {
     const load = async () => {
       setLoading(true)
@@ -38,10 +52,13 @@ const AlertsDetails = () => {
           api.get('/reports/expiry'),
           api.get('/reports/missing'),
         ])
+        const products = await api.get('/products')
 
         const salesList = Array.isArray(sales) ? sales : []
         const expiryList = Array.isArray(expiry) ? expiry : []
         const missingList = Array.isArray(missing) ? missing : []
+        const productsList = Array.isArray(products) ? products : []
+        const productById = new Map(productsList.map((product) => [String(product.id), product]))
         const expiredItems = expiryList.filter((item) => item.status === 'expired')
         const in3 = expiryList.filter((item) => item.status === 'in_3_months')
         const in2 = expiryList.filter((item) => item.status === 'in_2_months')
@@ -61,7 +78,10 @@ const AlertsDetails = () => {
             setItems(expiredItems.map((item) => ({
               key: item.id,
               label: item.name,
-              meta: `${item.expiry_date ? `Expired on ${new Date(item.expiry_date).toLocaleDateString()}` : 'Expired item'} | Qty: ${item.quantity ?? '-'}`,
+              meta: buildProductMeta(item, [
+                item.expiry_date ? `Expired on ${new Date(item.expiry_date).toLocaleDateString()}` : 'Expired item',
+                'Status: expired',
+              ]).join(' | '),
             })))
             break
           case 'missing':
@@ -69,7 +89,19 @@ const AlertsDetails = () => {
             setItems(missingList.map((item) => ({
               key: item.id,
               label: item.product_name || 'Product',
-              meta: `Expected: ${item.expected ?? '-'} | Actual: ${item.actual ?? '-'} | Difference: ${item.difference ?? '-'}`,
+              meta: (() => {
+                const product = productById.get(String(item.product_id))
+                if (!product) {
+                  return `Expected: ${item.expected ?? '-'} | Actual: ${item.actual ?? '-'} | Difference: ${item.difference ?? '-'} | Product record not found`
+                }
+                return buildProductMeta(product, [
+                  `Expected: ${item.expected ?? '-'}`,
+                  `Actual: ${item.actual ?? '-'}`,
+                  `Difference: ${item.difference ?? '-'}`,
+                  `Loss value: ${formatCurrency(item.loss_value)}`,
+                  `Detected by: ${item.detected_by ?? '-'}`,
+                ]).join(' | ')
+              })(),
             })))
             break
           case 'in_3_months':
@@ -77,7 +109,10 @@ const AlertsDetails = () => {
             setItems(in3.map((item) => ({
               key: item.id,
               label: item.name,
-              meta: item.expiry_date ? `Expires on ${new Date(item.expiry_date).toLocaleDateString()}` : 'Pending expiry date',
+              meta: buildProductMeta(item, [
+                item.expiry_date ? `Expires on ${new Date(item.expiry_date).toLocaleDateString()}` : 'Pending expiry date',
+                'Status: expires in 3 months',
+              ]).join(' | '),
             })))
             break
           case 'in_2_months':
@@ -85,7 +120,10 @@ const AlertsDetails = () => {
             setItems(in2.map((item) => ({
               key: item.id,
               label: item.name,
-              meta: item.expiry_date ? `Expires on ${new Date(item.expiry_date).toLocaleDateString()}` : 'Pending expiry date',
+              meta: buildProductMeta(item, [
+                item.expiry_date ? `Expires on ${new Date(item.expiry_date).toLocaleDateString()}` : 'Pending expiry date',
+                'Status: expires in 2 months',
+              ]).join(' | '),
             })))
             break
           case 'in_1_month':
@@ -93,7 +131,10 @@ const AlertsDetails = () => {
             setItems(in1.map((item) => ({
               key: item.id,
               label: item.name,
-              meta: item.expiry_date ? `Expires on ${new Date(item.expiry_date).toLocaleDateString()}` : 'Pending expiry date',
+              meta: buildProductMeta(item, [
+                item.expiry_date ? `Expires on ${new Date(item.expiry_date).toLocaleDateString()}` : 'Pending expiry date',
+                'Status: expires in 1 month',
+              ]).join(' | '),
             })))
             break
           default:

@@ -322,6 +322,23 @@ button:disabled { cursor: not-allowed; opacity: 0.7; transform: none; }
 .hero-subtitle, .muted, .helper-text { color: var(--muted); }
 
 .hero-actions, .section-actions, .table-toolbar, .auth-actions, .form-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.hero-actions > * { min-width: 0; }
+
+.products-actions { justify-content: flex-end; }
+.search-bar {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+	min-width: min(100%, 520px);
+}
+.search-bar input {
+	min-width: min(100%, 280px);
+	flex: 1;
+}
+.search-button {
+	white-space: nowrap;
+}
 
 
 /* ------------------------------
@@ -329,7 +346,7 @@ button:disabled { cursor: not-allowed; opacity: 0.7; transform: none; }
    Hero layouts and marketing components.
    ------------------------------ */
 .landing-page { display: grid; gap: 20px; }
-.landing-hero { grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr); align-items: stretch; }
+.landing-hero { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-items: stretch; }
 .hero-copy, .hero-showcase { display: grid; gap: 16px; }
 .hero-copy { align-content: start; }
 .spotlight-card { border-radius: 22px; padding: 22px; background: linear-gradient(135deg, rgba(38, 208, 206, 0.14), rgba(106, 133, 255, 0.12)); border: 1px solid rgba(255,255,255,0.12); }
@@ -341,14 +358,14 @@ button:disabled { cursor: not-allowed; opacity: 0.7; transform: none; }
    8) Grids & Utilities
    Small utility classes for layout patterns.
    ------------------------------ */
-.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
-.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 16px; }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 16px; }
 .feature-card { min-height: 180px; }
 
 .feature-kicker { margin: 0 0 10px; color: var(--primary); font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; }
 .feature-card h3 { margin: 0 0 10px; font-size: 1.2rem; }
 
-.showcase-band { display: grid; grid-template-columns: minmax(0,1fr) minmax(280px,0.8fr); gap: 16px; padding: 22px; border-radius: 26px; background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.1); }
+.showcase-band { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; padding: 22px; border-radius: 26px; background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.1); }
 .showcase-list { display: grid; gap: 12px; align-content: start; }
 .showcase-item { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:14px; background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); }
 .showcase-dot { width:10px; height:10px; border-radius:999px; background: linear-gradient(135deg, var(--primary), var(--accent)); box-shadow: 0 0 0 6px rgba(38,208,206,0.12); }
@@ -437,9 +454,9 @@ input:focus, select:focus { border-color: rgba(38, 208, 206, 0.7); box-shadow: 0
    Data table layout and tag styles.
    ------------------------------ */
 .table-card, .panel, .auth-card { border-radius: 24px; padding: 22px; }
-.table-card { overflow: hidden; }
+.table-card { overflow-x: auto; }
 
-table { width:100%; border-collapse: collapse; }
+table { width:100%; min-width: 720px; border-collapse: collapse; }
 th, td { padding: 14px 12px; text-align:left; border-bottom: 1px solid rgba(255,255,255,0.08); }
 th { color:var(--muted); font-size:0.84rem; text-transform:uppercase; letter-spacing:0.08em; }
 tbody tr:hover { background: rgba(255,255,255,0.03); }
@@ -460,7 +477,7 @@ tbody tr:hover { background: rgba(255,255,255,0.03); }
 .footer-brand { display:flex; align-items:center; gap:14px; }
 .footer-brand h2 { margin:0 0 4px; font-size:1.1rem; }
 .footer-brand p { margin:0; color:var(--muted); }
-.footer-grid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:16px; }
+.footer-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:16px; }
 .footer-grid h3 { margin:0 0 10px; font-size:0.96rem; }
 .footer-grid a { display:block; color:var(--muted); padding:6px 0; }
 .footer-grid a:hover, .footer-socials a:hover { color: var(--text); }
@@ -793,7 +810,7 @@ select:focus {
 }
 
 .drawer-grid {
-	grid-template-columns: repeat(2, minmax(0, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
 .drawer-inline-input {
@@ -823,7 +840,7 @@ select:focus {
 
 .supplier-grid {
 	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 	gap: 12px;
 }
 
@@ -858,6 +875,23 @@ select:focus {
 	.hero-actions {
 		flex-direction: column;
 		align-items: stretch;
+	}
+
+	.products-actions {
+		align-items: stretch;
+	}
+
+	.search-bar {
+		min-width: 100%;
+	}
+
+	.search-bar input,
+	.search-button {
+		width: 100%;
+	}
+
+	.hero-actions > * {
+		width: 100%;
 	}
 
 	.nav-actions {
@@ -909,5 +943,68 @@ select:focus {
 		grid-template-columns: 1fr;
 		flex-direction: column;
 		align-items: flex-start;
+	}
+}
+
+@media (max-width: 560px) {
+	.page {
+		width: min(100% - 16px, 1160px);
+	}
+
+	.hero-card,
+	.panel,
+	.auth-card,
+	.table-card,
+	.modal-body {
+		padding: 16px;
+	}
+
+	.hero-title {
+		font-size: clamp(1.8rem, 8vw, 2.6rem);
+	}
+
+	.hero-subtitle {
+		font-size: 0.96rem;
+	}
+
+	.metric-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.metric-card {
+		padding: 18px;
+	}
+
+	button,
+	.button,
+	.button-primary,
+	.button-secondary {
+		width: 100%;
+	}
+
+	.auth-actions,
+	.section-actions,
+	.form-actions,
+	.table-actions {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.drawer-panel {
+		padding: 18px;
+	}
+
+	.drawer-header,
+	.supplier-card-header {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.page-header {
+		gap: 12px;
+	}
+
+	.nav-account-toggle {
+		width: 100%;
 	}
 }

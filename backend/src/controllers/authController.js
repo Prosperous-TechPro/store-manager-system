@@ -202,11 +202,10 @@ const updateMe = async (req, res) => {
     if (!isValidEmail(nextEmail)) return res.status(400).json({ error: 'Enter a valid email address' });
     if (!isValidPhone(nextPhone)) return res.status(400).json({ error: 'Enter a valid Ghana phone number' });
 
-    // Require current password only when changing name or password.
-    // Email/phone changes may be initiated without the current password
-    // because they are confirmed via an OTP flow (see below).
-    if ((nextName !== existing.name || passwordChanged) && !currentPassword) {
-      return res.status(400).json({ error: 'Current password is required to confirm name or password changes' });
+    // Only password changes require the current password.
+    // Name, email, and phone updates are saved directly or confirmed via OTP.
+    if (passwordChanged && !currentPassword) {
+      return res.status(400).json({ error: 'Current password is required to confirm password changes' });
     }
 
     if (currentPassword) {
