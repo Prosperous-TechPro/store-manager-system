@@ -8,10 +8,12 @@ const Records = () => {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleteReason, setDeleteReason] = useState('')
   const [deleting, setDeleting] = useState(false)
+  const [approvingId, setApprovingId] = useState(null)
   const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
   const currentRole = currentUser?.role === 'owner' ? 'ceo' : currentUser?.role
   const canSeeDeleteReason = ['ceo', 'admin'].includes(currentRole)
   const canDeleteUsers = ['manager', 'ceo', 'admin'].includes(currentRole)
+  const canApproveUsers = ['manager', 'ceo'].includes(currentRole)
 
   useEffect(() => {
     const load = async () => {
@@ -33,6 +35,19 @@ const Records = () => {
   const refreshUsers = async () => {
     const data = await api.get('/users')
     setUsers(Array.isArray(data) ? data : [])
+  }
+
+  const approveUser = async (user) => {
+    setError('')
+    setApprovingId(user.id)
+    try {
+      await api.post(`/users/${user.id}/approve`)
+      await refreshUsers()
+    } catch (err) {
+      setError(err.message || 'Failed to approve user')
+    } finally {
+      setApprovingId(null)
+    }
   }
 
   const openDelete = (user) => {
@@ -90,8 +105,10 @@ const Records = () => {
                 <th>Phone</th>
                 <th>Role</th>
                 <th>Verified</th>
+                <th>Approval</th>
                 <th>Status</th>
                 {canSeeDeleteReason && <th>Delete Reason</th>}
+                {canApproveUsers && <th>Approve</th>}
                 {canDeleteUsers && <th>Action</th>}
                 <th>Created</th>
               </tr>
@@ -104,8 +121,20 @@ const Records = () => {
                   <td>{user.phone || '-'}</td>
                   <td><span className="tag tag-role">Role: {user.role}</span></td>
                   <td>{user.phone_verified ? <span className="tag tag-success">Yes</span> : <span className="tag tag-warn">No</span>}</td>
+                  <td>{user.approved ? <span className="tag tag-success">Approved</span> : <span className="tag tag-warn">Pending</span>}</td>
                   <td>{user.deleted_at ? <span className="tag tag-danger">Deleted</span> : <span className="tag tag-success">Active</span>}</td>
                   {canSeeDeleteReason && <td>{user.delete_reason || '-'}</td>}
+                  {canApproveUsers && (
+                    <td>
+                      {!user.deleted_at && !user.approved ? (
+                        <button className="button-secondary" onClick={() => approveUser(user)} disabled={approvingId === user.id}>
+                          {approvingId === user.id ? 'Approving...' : 'Approve'}
+                        </button>
+                      ) : (
+                        <span className="section-note">{user.approved_at ? new Date(user.approved_at).toLocaleString() : '-'}</span>
+                      )}
+                    </td>
+                  )}
                   {canDeleteUsers && (
                     <td>
                       {!user.deleted_at ? (

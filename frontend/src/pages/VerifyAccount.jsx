@@ -45,8 +45,12 @@ const VerifyAccount = () => {
         window.location.href = '/dashboard'
         return
       }
-      setMessage('Account verified. You can sign in now.')
+      setMessage('Account verified. It still needs manager or CEO approval before you can sign in.')
     } catch (err) {
+      if (err.status === 403 && err.data?.approval_required) {
+        setMessage('Phone verified. Your account is now waiting for manager or CEO approval.')
+        return
+      }
       setError(err.message || 'Verification failed')
     } finally {
       setLoading(false)

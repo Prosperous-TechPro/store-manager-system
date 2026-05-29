@@ -22,7 +22,7 @@ describe('authController.unit', ()=>{
   test('register: creates user and triggers SMS', async ()=>{
     db.query.mockImplementation((text, params)=>{
       if (text.startsWith('SELECT id FROM users WHERE email')) return Promise.resolve({ rows: [] })
-      if (text.startsWith('INSERT INTO users')) return Promise.resolve({ rows: [{ id:1, name: params[0], email: params[1], role: params[3], phone: params[4], phone_verified:false }] })
+      if (text.startsWith('INSERT INTO users')) return Promise.resolve({ rows: [{ id:1, name: params[0], email: params[1], role: params[3], phone: params[4], phone_verified:false, approved:false }] })
       return Promise.resolve({ rows: [] })
     })
     sms.generateAndSendCode.mockResolvedValue({ ok:true, sent:false, code:'123456' })
@@ -32,6 +32,8 @@ describe('authController.unit', ()=>{
     await auth.register(req, res)
     expect(res._status).toBe(201)
     expect(res._body).toHaveProperty('email','s@e.com')
+    expect(res._body.approved).toBe(false)
+    expect(res._body.approval_required).toBe(true)
     expect(sms.generateAndSendCode).toHaveBeenCalledWith('+233241234567','signup')
   })
 
@@ -40,7 +42,7 @@ describe('authController.unit', ()=>{
       if (text.startsWith('SELECT * FROM sms_verifications')) return Promise.resolve({ rows: [{ id:10, code_hash:'hash', expires_at: new Date(Date.now()+10000), verified:false }] })
       if (text.startsWith('UPDATE sms_verifications SET verified=true')) return Promise.resolve({})
       if (text.startsWith('UPDATE users SET phone_verified=true')) return Promise.resolve({})
-      if (text.startsWith('SELECT id,name,email,role,phone FROM users WHERE phone=$1')) return Promise.resolve({ rows: [{ id: 1, name: 'Sam', email: 's@e.com', role: 'manager', phone: '+233241234567' }] })
+      if (text.startsWith('SELECT id,name,email,role,phone,approved FROM users WHERE phone=$1')) return Promise.resolve({ rows: [{ id: 1, name: 'Sam', email: 's@e.com', role: 'manager', phone: '+233241234567', approved: true }] })
       return Promise.resolve({ rows: [] })
     })
     // mock verifyCodeInternal to return ok
@@ -52,6 +54,23 @@ describe('authController.unit', ()=>{
     expect(res._body).toMatchObject({ ok:true, user: { id: 1, name: 'Sam', email: 's@e.com', role: 'manager', phone: '+233241234567' } })
     expect(res._body.token).toBeTruthy()
     expect(db.query).toHaveBeenCalledWith(expect.stringContaining('UPDATE users SET phone_verified=true'), ['+233241234567'])
+  })
+
+  test('login: blocks unapproved accounts before access', async ()=>{
+    const currentHash = bcrypt.hashSync('OldPass123!', 10)
+    db.query.mockImplementation((text)=>{
+      if (text.startsWith('SELECT id,name,email,password,role,phone,phone_verified,approved,deleted_at FROM users WHERE lower(email)=lower($1)')) {
+        return Promise.resolve({ rows: [{ id: 1, name: 'Sam', email: 's@e.com', password: currentHash, role: 'manager', phone: '+233241234567', phone_verified: true, approved: false, deleted_at: null }] })
+      }
+      return Promise.resolve({ rows: [] })
+    })
+
+    const req = { body: { email: 's@e.com', password: 'OldPass123!' } }
+    const res = makeRes()
+    await auth.login(req, res)
+
+    expect(res._status).toBe(403)
+    expect(res._body).toMatchObject({ approval_required: true })
   })
 
   test('updateMe: updates name and password directly when contact details do not change', async ()=>{
@@ -138,8 +157,8 @@ describe('authController.unit', ()=>{
   test('resetPassword: updates password and returns a login session', async ()=>{
     const currentHash = bcrypt.hashSync('OldPass123!', 10)
     db.query.mockImplementation((text, params)=>{
-      if (text.startsWith('SELECT id,name,email,role,phone,deleted_at FROM users WHERE lower(email)=lower($1)')) {
-        return Promise.resolve({ rows: [{ id: 1, name: 'Sam', email: 's@e.com', role: 'manager', phone: '+233241234567', deleted_at: null }] })
+      if (text.startsWith('SELECT id,name,email,role,phone,approved,deleted_at FROM users WHERE lower(email)=lower($1)')) {
+          return Promise.resolve({ rows: [{ id: 1, name: 'Sam', email: 's@e.com', role: 'manager', phone: '+233241234567', approved: true, deleted_at: null }] })
       }
       if (text.startsWith('UPDATE users SET password=$1 WHERE id=$2')) {
         return Promise.resolve({ rows: [{ id: 1, name: 'Sam', email: 's@e.com', role: 'manager', phone: '+233241234567' }] })

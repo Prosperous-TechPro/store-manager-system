@@ -52,6 +52,10 @@ const Login = () => {
         navigate(`/verify-account?phone=${encodeURIComponent(err.data.phone || '')}&email=${encodeURIComponent(err.data.email || email)}`)
         return
       }
+      if (mode === 'login' && err.status === 403 && err.data?.approval_required) {
+        setError('Your account is waiting for manager or CEO approval before you can sign in.')
+        return
+      }
       setError(err.message || (mode === 'login' ? 'Login failed' : 'Account creation failed'))
     } finally {
       setLoading(false)

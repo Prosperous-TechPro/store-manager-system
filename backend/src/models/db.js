@@ -17,6 +17,9 @@ const initSchema = async () => {
           role TEXT NOT NULL DEFAULT 'cashier',
           phone TEXT UNIQUE,
           phone_verified BOOLEAN DEFAULT FALSE,
+          approved BOOLEAN DEFAULT FALSE,
+          approved_at TIMESTAMP,
+          approved_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
           deleted_at TIMESTAMP,
           deleted_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
           delete_reason TEXT,
@@ -108,7 +111,10 @@ const initSchema = async () => {
         ALTER TABLE users
           ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP,
           ADD COLUMN IF NOT EXISTS deleted_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-          ADD COLUMN IF NOT EXISTS delete_reason TEXT
+          ADD COLUMN IF NOT EXISTS delete_reason TEXT,
+          ADD COLUMN IF NOT EXISTS approved BOOLEAN DEFAULT FALSE,
+          ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP,
+          ADD COLUMN IF NOT EXISTS approved_by INTEGER REFERENCES users(id) ON DELETE SET NULL
       `);
 
       await pool.query(`

@@ -67,8 +67,8 @@ const register = async (req, res) => {
     if (phoneExists.rows.length) return res.status(409).json({ error: 'Phone number already registered' });
     const hash = await bcrypt.hash(password, 10);
     const result = await db.query(
-      'INSERT INTO users(name,email,password,role,phone,phone_verified) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,name,email,role,phone,phone_verified',
-      [name, normalizedEmail, hash, normalizedRole, normalizedPhone, false]
+      'INSERT INTO users(name,email,password,role,phone,phone_verified,approved) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id,name,email,role,phone,phone_verified,approved',
+      [name, normalizedEmail, hash, normalizedRole, normalizedPhone, false, false]
     );
     const user = result.rows[0];
     try {
@@ -76,7 +76,7 @@ const register = async (req, res) => {
     } catch (e) {
       console.warn('Failed to send signup SMS', e.message || e);
     }
-    res.status(201).json({ ...user, verification_required: true });
+    res.status(201).json({ ...user, verification_required: true, approval_required: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
@@ -89,10 +89,11 @@ const login = async (req, res) => {
   if (!isValidEmail(email)) return res.status(400).json({ error: 'Enter a valid email address' });
   try {
     const normalizedEmail = normalizeEmail(email);
-    const result = await db.query('SELECT id,name,email,password,role,phone,phone_verified,deleted_at FROM users WHERE lower(email)=lower($1)', [normalizedEmail]);
+    const result = await db.query('SELECT id,name,email,password,role,phone,phone_verified,approved,deleted_at FROM users WHERE lower(email)=lower($1)', [normalizedEmail]);
     const user = result.rows[0];
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
     if (user.deleted_at) return res.status(403).json({ error: 'Account has been deleted' });
+    if (!user.approved) return res.status(403).json({ error: 'Account is waiting for manager or CEO approval', approval_required: true });
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
     const session = issueAuthSession(user);
@@ -112,9 +113,15 @@ const verifyPhone = async (req, res) => {
     if (!r.ok) return res.status(400).json({ error: r.reason || 'Invalid code' });
     const normalizedPhone = normalizePhone(phone);
     await db.query('UPDATE users SET phone_verified=true WHERE phone=$1', [normalizedPhone]);
-    const result = await db.query('SELECT id,name,email,role,phone FROM users WHERE phone=$1', [normalizedPhone]);
+    const result = await db.query('SELECT id,name,email,role,phone,approved FROM users WHERE phone=$1', [normalizedPhone]);
     const user = result.rows[0];
     if (!user) return res.status(404).json({ error: 'Account not found' });
+    if (!user.approved) {
+      return res.status(403).json({
+        error: 'Account is waiting for manager or CEO approval',
+        approval_required: true,
+      });
+    }
     const session = issueAuthSession(user);
     res.json({
       ok: true,
@@ -332,10 +339,11 @@ const resetPassword = async (req, res) => {
   if (String(newPassword).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters long' });
   try {
     const normalizedEmail = normalizeEmail(email);
-    const result = await db.query('SELECT id,name,email,role,phone,deleted_at FROM users WHERE lower(email)=lower($1)', [normalizedEmail]);
+    const result = await db.query('SELECT id,name,email,role,phone,approved,deleted_at FROM users WHERE lower(email)=lower($1)', [normalizedEmail]);
     const user = result.rows[0];
     if (!user) return res.status(404).json({ error: 'Account not found' });
     if (user.deleted_at) return res.status(403).json({ error: 'Account has been deleted' });
+    if (!user.approved) return res.status(403).json({ error: 'Account is waiting for manager or CEO approval', approval_required: true });
     if (!user.phone) return res.status(400).json({ error: 'No phone number available for this account' });
     const r = await sms.verifyCodeInternal(user.phone, code, 'password_reset');
     if (!r.ok) return res.status(400).json({ error: r.reason || 'Invalid code' });
