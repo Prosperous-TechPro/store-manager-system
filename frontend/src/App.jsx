@@ -8,6 +8,7 @@ import Account from './pages/Account'
 import Dashboard from './pages/Dashboard'
 import Records from './pages/Records'
 import Alerts from './pages/Alerts'
+import Approvals from './pages/Approvals'
 import Products from './pages/Products'
 import Policy from './pages/Policy'
 import Documentation from './pages/Documentation'
@@ -23,6 +24,7 @@ const App = () => {
   const currentRole = currentUser?.role === 'owner' ? 'ceo' : currentUser?.role
   const canViewManagement = ['manager', 'ceo', 'admin'].includes(currentRole)
   const canViewAlerts = ['manager', 'ceo', 'admin'].includes(currentRole)
+  const canViewApprovals = ['manager', 'ceo'].includes(currentRole)
   const location = useLocation()
 
   useEffect(() => {
@@ -50,6 +52,7 @@ const App = () => {
         <Route path="/cookie-policy" element={<CookiePolicy />} />
         <Route path="/dashboard" element={token ? (canViewManagement ? <Dashboard /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
         <Route path="/alerts" element={token ? (canViewAlerts ? <Alerts /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
+        <Route path="/approvals" element={token ? (canViewApprovals ? <Approvals /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
         <Route path="/products" element={token ? <Products /> : <Navigate to="/login" />} />
         <Route path="/records" element={token ? (canViewManagement ? <Records /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to="/" />} />

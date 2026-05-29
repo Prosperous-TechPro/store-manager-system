@@ -12,6 +12,21 @@ const listUsers = async (req, res) => {
   }
 };
 
+const listPendingUsers = async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT id,name,email,role,phone,phone_verified,approved,approved_at,approved_by,deleted_at,created_at
+       FROM users
+       WHERE approved=false AND deleted_at IS NULL
+       ORDER BY created_at DESC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
 const approveUser = async (req, res) => {
   const targetId = Number(req.params.id);
   if (!targetId) return res.status(400).json({ error: 'Valid user id is required' });
@@ -39,4 +54,4 @@ const approveUser = async (req, res) => {
   }
 };
 
-module.exports = { listUsers, approveUser };
+module.exports = { listUsers, listPendingUsers, approveUser };
