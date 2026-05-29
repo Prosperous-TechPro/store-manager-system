@@ -14,10 +14,23 @@ const Approvals = () => {
     setLoading(true)
     setError('')
     try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        setError('Not authenticated. Please sign in as an approved manager or CEO.')
+        setUsers([])
+        return
+      }
+      if (!canApprove) {
+        setError('You do not have permission to view approval requests.')
+        setUsers([])
+        return
+      }
+
       const data = await api.get('/users/pending')
       setUsers(Array.isArray(data) ? data : [])
     } catch (err) {
-      setError(err.message || 'Failed to load approval requests')
+      const msg = err?.data?.error || err?.message || 'Failed to load approval requests'
+      setError(msg)
     } finally {
       setLoading(false)
     }
