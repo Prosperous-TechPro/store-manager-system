@@ -64,8 +64,8 @@ const Nav = ()=>{
           <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`} onClick={closeMobile}>Home</Link>
           {canViewDashboard && <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`} onClick={closeMobile}>Dashboard</Link>}
           <Link to="/products" className={`nav-link ${location.pathname === '/products' ? 'active' : ''}`} onClick={closeMobile}>Products</Link>
-          {canViewRecords && <Link to="/records" className={`nav-link ${location.pathname === '/records' ? 'active' : ''}`} onClick={closeMobile}>Records</Link>}
-          {canViewRequests && <Link to="/requests" className={`nav-link ${location.pathname === '/requests' ? 'active' : ''}`} onClick={closeMobile}>Request for approval</Link>}
+          {canViewRecords && <Link to="/records" className={`nav-link ${location.pathname === '/records' ? 'active' : ''}`} onClick={closeMobile}>Users</Link>}
+          {canViewRequests && <Link to="/requests" className={`nav-link ${location.pathname === '/requests' ? 'active' : ''}`} onClick={closeMobile}>Request</Link>}
           {canViewAlerts && <Link to="/alerts" className={`nav-link nav-alert-link ${location.pathname === '/alerts' ? 'active' : ''}`} onClick={closeMobile}>Alerts{alertCount > 0 && <span className="badge">{alertCount}</span>}</Link>}
         </nav>
 
@@ -107,8 +107,8 @@ const Nav = ()=>{
           <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`} onClick={() => setMobileOpen(false)}>Home</Link>
           {canViewDashboard && <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`} onClick={() => setMobileOpen(false)}>Dashboard</Link>}
           <Link to="/products" className={`nav-link ${location.pathname === '/products' ? 'active' : ''}`} onClick={() => setMobileOpen(false)}>Products</Link>
-          {canViewRecords && <Link to="/records" className={`nav-link ${location.pathname === '/records' ? 'active' : ''}`} onClick={() => setMobileOpen(false)}>Records</Link>}
-          {canViewRequests && <Link to="/requests" className={`nav-link ${location.pathname === '/requests' ? 'active' : ''}`} onClick={() => setMobileOpen(false)}>Request for approval</Link>}
+          {canViewRecords && <Link to="/records" className={`nav-link ${location.pathname === '/records' ? 'active' : ''}`} onClick={() => setMobileOpen(false)}>Users</Link>}
+          {canViewRequests && <Link to="/requests" className={`nav-link ${location.pathname === '/requests' ? 'active' : ''}`} onClick={() => setMobileOpen(false)}>Request</Link>}
           {canViewAlerts && <Link to="/alerts" className={`nav-link nav-alert-link ${location.pathname === '/alerts' ? 'active' : ''}`} onClick={() => setMobileOpen(false)}>Alerts{alertCount > 0 && <span className="badge">{alertCount}</span>}</Link>}
         </div>
       )}
