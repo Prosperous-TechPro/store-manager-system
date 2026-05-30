@@ -13,7 +13,11 @@ const authenticate = async (req, res, next) => {
     const user = result.rows[0];
     if (!user || user.deleted_at) return res.status(401).json({ error: 'Account is no longer active' });
     if (!user.approved) return res.status(401).json({ error: 'Account is waiting for manager or CEO approval' });
-    req.user = { id: user.id, role: user.role === 'owner' ? 'ceo' : user.role };
+
+    const rawRole = String(user.role || '').trim().toLowerCase();
+    const normalizedRole = rawRole === 'owner' ? 'ceo' : (rawRole === 'cashier' ? 'casher' : rawRole);
+
+    req.user = { id: user.id, role: normalizedRole };
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Invalid token' });
