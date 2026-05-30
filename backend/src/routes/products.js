@@ -8,6 +8,6 @@ router.get('/barcode/:barcode', authenticate, getProductByBarcode);
 router.get('/:id', authenticate, getProduct);
 router.post('/', authenticate, authorize(['manager']), createProduct);
 router.put('/:id', authenticate, authorize(['manager','ceo']), updateProduct);
-router.delete('/:id', authenticate, authorize(['manager','ceo']), deleteProduct);
+router.delete('/:id', authenticate, authorize(['manager']), deleteProduct);
 
 module.exports = router;

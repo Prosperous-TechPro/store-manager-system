@@ -8,7 +8,7 @@ const Products = () => {
   const role = user?.role === 'owner' ? 'ceo' : user?.role
   const canManageProducts = ['manager', 'ceo'].includes(role)
   const canAddProducts = role === 'manager'
-  const canDeleteProducts = () => ['manager', 'ceo'].includes(role)
+  const canDeleteProducts = role === 'manager'
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -117,7 +117,7 @@ const Products = () => {
                     <td>
                       <div className="table-actions">
                         {canManageProducts && <button className="button-secondary" onClick={()=>onEdit(p)}>Edit</button>}
-                        {canDeleteProducts(p) && <button className="button-danger" onClick={()=>onDelete(p.id)}>Delete</button>}
+                        {canDeleteProducts && <button className="button-danger" onClick={()=>onDelete(p.id)}>Delete</button>}
                       </div>
                     </td>
                   </tr>
@@ -151,7 +151,7 @@ const Products = () => {
                   <div className="approval-card-actions">
                     <div className="table-actions">
                       {canManageProducts && <button className="button-secondary" onClick={()=>onEdit(p)}>Edit</button>}
-                      {canDeleteProducts(p) && <button className="button-danger" onClick={()=>onDelete(p.id)}>Delete</button>}
+                      {canDeleteProducts && <button className="button-danger" onClick={()=>onDelete(p.id)}>Delete</button>}
                     </div>
                   </div>
                 </article>

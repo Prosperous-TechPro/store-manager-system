@@ -116,4 +116,28 @@ const listSalesDetails = async (req, res) => {
   }
 };
 
-module.exports = { createSale, getSalesSummary, listSales, listSalesDetails };
+const resetSalesTotal = async (req, res) => {
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    const salesResult = await client.query('SELECT id FROM sales');
+    const saleIds = salesResult.rows.map((row) => row.id);
+
+    if (saleIds.length) {
+      await client.query('DELETE FROM sales WHERE id = ANY($1::int[])', [saleIds]);
+    }
+
+    await client.query('COMMIT');
+    res.json({ ok: true, removed_sales: saleIds.length, total_sales: 0, transactions: 0 });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  } finally {
+    if (typeof client.release === 'function') {
+      client.release();
+    }
+  }
+};
+
+module.exports = { createSale, getSalesSummary, listSales, listSalesDetails, resetSalesTotal };

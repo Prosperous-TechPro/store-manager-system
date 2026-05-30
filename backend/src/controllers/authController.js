@@ -118,11 +118,25 @@ const register = async (req, res) => {
 
       let smsSent = false;
       let smsMessage = null;
-      try {
-        const smsResult = await sms.generateAndSendCode(normalizedPhone, 'signup');
-        smsSent = Boolean(smsResult && smsResult.sent);
-      } catch (smsErr) {
-        smsMessage = smsErr && smsErr.message ? smsErr.message : 'Failed to send signup SMS';
+      const smsAttempt = sms.generateAndSendCode(normalizedPhone, 'signup')
+        .then((smsResult) => ({ ok: true, smsResult }))
+        .catch((smsErr) => ({
+          ok: false,
+          smsErr,
+        }));
+
+      const smsResult = await Promise.race([
+        smsAttempt,
+        new Promise((resolve) => setTimeout(() => resolve({ ok: false, timeout: true }), 5000)),
+      ]);
+
+      if (smsResult.ok) {
+        smsSent = Boolean(smsResult.smsResult && smsResult.smsResult.sent);
+      } else if (smsResult.timeout) {
+        smsMessage = 'Verification SMS is taking longer than expected';
+        console.warn('Signup SMS timed out for', normalizedPhone);
+      } else {
+        smsMessage = smsResult.smsErr && smsResult.smsErr.message ? smsResult.smsErr.message : 'Failed to send signup SMS';
         console.warn('Failed to send signup SMS', smsMessage);
       }
 
