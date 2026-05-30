@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import api from '../services/api'
 
 const Sales = () => {
@@ -6,6 +6,29 @@ const Sales = () => {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [summary, setSummary] = useState({ total_sales: 0, transactions: 0 })
+
+  const loadSummary = useCallback(async () => {
+    try {
+      const body = await api.get('/sales/summary')
+      setSummary({
+        total_sales: Number.parseFloat(body?.total_sales || 0),
+        transactions: Number.parseInt(body?.transactions || 0, 10),
+      })
+    } catch (err) {
+      console.error(err)
+    }
+  }, [])
+
+  const broadcastSync = () => {
+    const stamp = String(Date.now())
+    window.localStorage.setItem('store-sync', stamp)
+    window.dispatchEvent(new Event('store-sync'))
+  }
+
+  useEffect(() => {
+    loadSummary()
+  }, [loadSummary])
 
   const submit = async (e) => {
     e.preventDefault()
@@ -23,6 +46,8 @@ const Sales = () => {
       await api.post('/sales', { amount: saleAmount })
       setMessage(`Recorded GHS ${saleAmount.toFixed(2)} in sales.`)
       setAmount('')
+      await loadSummary()
+      broadcastSync()
     } catch (err) {
       setError(err.message || 'Failed to record sales')
     } finally {
@@ -32,12 +57,6 @@ const Sales = () => {
 
   return (
     <div className="page static-page">
-      <section className="hero-card">
-        <div className="auth-badge">Sales entry</div>
-        <h1 className="hero-title">Record sales amount</h1>
-        <p className="hero-subtitle">Cashiers can enter the total sales amount after checkout. Managers can use the same screen too.</p>
-      </section>
-
       <section className="panel" style={{ maxWidth: 640 }}>
         <form onSubmit={submit} className="form-grid">
           <div className="form-field">

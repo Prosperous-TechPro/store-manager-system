@@ -50,6 +50,15 @@ const getApprovalError = (role) => {
   return 'Account is waiting for manager or CEO approval';
 };
 
+const countActiveManagers = async (excludeUserId = null) => {
+  const query = excludeUserId
+    ? 'SELECT COUNT(*)::int AS total FROM users WHERE deleted_at IS NULL AND lower(role) = \'manager\' AND id <> $1'
+    : 'SELECT COUNT(*)::int AS total FROM users WHERE deleted_at IS NULL AND lower(role) = \'manager\'';
+  const params = excludeUserId ? [excludeUserId] : [];
+  const result = await db.query(query, params);
+  return result.rows[0]?.total || 0;
+};
+
 const register = async (req, res) => {
   const { name, email, password, role = 'casher', phone } = req.body;
   if (!name || !email || !password || !phone) return res.status(400).json({ error: 'Name, email, password, and phone are required' });
@@ -82,6 +91,12 @@ const register = async (req, res) => {
       const ceoCount = ceoCountResult.rows[0]?.total || 0;
       if (ceoCount >= 3) {
         return res.status(403).json({ error: 'cant create account, consult the manager' });
+      }
+    }
+    if (normalizedRole === 'manager') {
+      const managerCount = await countActiveManagers();
+      if (managerCount >= 2) {
+        return res.status(403).json({ error: 'Only two manager accounts are allowed' });
       }
     }
     const hash = await bcrypt.hash(password, 10);
@@ -191,8 +206,24 @@ const forgotPassword = async (req, res) => {
     const user = result.rows[0];
     if (!user) return res.status(404).json({ error: 'Account not found' });
     if (!user.phone) return res.status(400).json({ error: 'No phone number on the account to send a reset code' });
-    await sms.generateAndSendCode(user.phone, 'password_reset');
-    res.json({ ok: true, message: 'Password reset code sent to the registered phone number' });
+    let smsSent = false;
+    let smsError = null;
+    try {
+      const smsResult = await sms.generateAndSendCode(user.phone, 'password_reset');
+      smsSent = Boolean(smsResult && smsResult.sent);
+    } catch (smsErr) {
+      smsError = smsErr && smsErr.message ? smsErr.message : 'Failed to send reset SMS';
+      console.warn('Failed to send password reset SMS', smsError);
+    }
+
+    return res.json({
+      ok: true,
+      sms_sent: smsSent,
+      sms_error: smsSent ? null : smsError,
+      message: smsSent
+        ? 'Password reset code sent to the registered phone number'
+        : 'Password reset code could not be sent right now. If you already received one, continue with the code below or try again.',
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Forgot password failed' });

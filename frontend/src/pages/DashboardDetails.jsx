@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import api from '../services/api'
 import useSyncRefresh from '../hooks/useSyncRefresh'
 
@@ -23,25 +23,49 @@ const metricEmptyMessages = {
 
 const DashboardDetails = () => {
   const { metricId } = useParams()
+  const user = JSON.parse(localStorage.getItem('user') || 'null')
+  const role = user?.role === 'owner' ? 'ceo' : user?.role
+  const canViewDashboard = ['manager', 'ceo', 'admin'].includes(role)
+  const canViewSalesTotal = ['casher', 'manager', 'saler', 'ceo', 'admin'].includes(role)
+  const hasAccess = metricId === 'sales-total' ? canViewSalesTotal : canViewDashboard
+  const backTarget = metricId === 'sales-total' && !canViewDashboard ? '/sales' : '/dashboard'
   const [loading, setLoading] = useState(true)
   const [summary, setSummary] = useState('')
   const [items, setItems] = useState([])
   const [error, setError] = useState('')
 
   const load = useCallback(async () => {
+    if (!hasAccess) {
+      return
+    }
+
     setLoading(true)
     setError('')
 
     try {
-      const [products, sales, expiry, missing] = await Promise.all([
+      if (metricId === 'sales-total') {
+        const sales = await api.get('/sales')
+
+        const salesList = Array.isArray(sales) ? sales : []
+        const totalSales = salesList.reduce((total, sale) => total + Number.parseFloat(sale.total_amount || 0), 0)
+        const transactions = salesList.length
+
+        setSummary(`There are ${transactions} sales transactions totaling ${Number.isFinite(totalSales) ? totalSales.toFixed(2) : '0.00'}.`)
+        setItems(salesList.map((sale) => ({
+          key: sale.id,
+          label: sale.date ? new Date(sale.date).toLocaleString() : `Sale #${sale.id}`,
+          meta: `Cashier: ${sale.cashier_name || '-'} | Total amount: ${Number.parseFloat(sale.total_amount || 0).toFixed(2)}`,
+        })))
+        return
+      }
+
+      const [products, expiry, missing] = await Promise.all([
         api.get('/products'),
-        api.get('/sales'),
         api.get('/reports/expiry'),
         api.get('/reports/missing'),
       ])
 
       const productsList = Array.isArray(products) ? products : []
-      const salesList = Array.isArray(sales) ? sales : []
       const expiryList = Array.isArray(expiry) ? expiry : []
       const missingList = Array.isArray(missing) ? missing : []
 
@@ -73,14 +97,6 @@ const DashboardDetails = () => {
             meta: `Quantity: ${item.quantity ?? 0} | Reorder level: ${item.reorder_level ?? 0} | Category: ${item.category || '-'}`,
           })))
           break
-        case 'sales-total':
-          setSummary(`There are ${salesList.length} sales transactions totaling ${salesList.reduce((total, sale) => total + parseFloat(sale.total_amount || 0), 0).toFixed(2)}.`)
-          setItems(salesList.map((sale) => ({
-            key: sale.id,
-            label: sale.date ? new Date(sale.date).toLocaleString() : `Sale #${sale.id}`,
-            meta: `Cashier: ${sale.cashier_name || '-'} | Total amount: ${Number.parseFloat(sale.total_amount || 0).toFixed(2)}`,
-          })))
-          break
         case 'expired-products':
           setSummary(`There are ${expiryList.filter((item) => item.status === 'expired').length} expired products that should be removed from active stock.`)
           setItems(expiryList.filter((item) => item.status === 'expired').map((item) => ({
@@ -108,13 +124,17 @@ const DashboardDetails = () => {
     } finally {
       setLoading(false)
     }
-  }, [metricId])
+  }, [hasAccess, metricId])
 
   useEffect(() => { load() }, [load])
   useSyncRefresh(load)
 
   const title = metricTitles[metricId]
   const emptyMessage = metricEmptyMessages[metricId]
+
+  if (!hasAccess) {
+    return <Navigate to={canViewSalesTotal ? '/sales' : '/products'} replace />
+  }
 
   return (
     <div className="page">
@@ -125,7 +145,7 @@ const DashboardDetails = () => {
             <h1 className="hero-title">{title || 'Dashboard details'}</h1>
             <p className="hero-subtitle">A focused breakdown of the metric you selected from the dashboard.</p>
           </div>
-          <Link className="nav-chip nav-chip-link" to="/dashboard">Back to dashboard</Link>
+          <Link className="nav-chip nav-chip-link" to={backTarget}>{backTarget === '/sales' ? 'Back to sales' : 'Back to dashboard'}</Link>
         </div>
       </section>
 

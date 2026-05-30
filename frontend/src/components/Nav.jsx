@@ -7,7 +7,8 @@ const Nav = ()=>{
   const role = user?.role === 'owner' ? 'ceo' : user?.role
   const canViewAlerts = ['manager', 'ceo', 'admin'].includes(role)
   const canViewRequests = ['manager', 'ceo'].includes(role)
-  const canViewSales = ['casher', 'manager', 'saler', 'ceo', 'admin'].includes(role)
+  const canViewSales = ['casher'].includes(role)
+  const canViewDashboard = ['casher', 'manager', 'ceo', 'admin'].includes(role)
   const [alertCount, setAlertCount] = useState(0)
   const [acctOpen, setAcctOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -44,7 +45,6 @@ const Nav = ()=>{
   const location = useLocation()
   const hideLogout = location?.pathname === '/account'
   const canViewRecords = ['manager', 'ceo', 'admin'].includes(role)
-  const canViewDashboard = ['manager', 'ceo', 'admin'].includes(role)
 
   const closeMobile = () => setMobileOpen(false)
   const syncData = () => {

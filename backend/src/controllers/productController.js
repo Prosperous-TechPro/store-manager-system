@@ -22,6 +22,27 @@ const getProduct = async (req, res) => {
   }
 };
 
+const getProductByBarcode = async (req, res) => {
+  const barcode = String(req.params.barcode || '').trim();
+  if (!barcode) return res.status(400).json({ error: 'Barcode is required' });
+
+  try {
+    const result = await db.query(
+      'SELECT p.*, s.name as supplier_name FROM products p LEFT JOIN suppliers s ON p.supplier_id = s.id WHERE lower(p.barcode) = lower($1) LIMIT 1',
+      [barcode]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ error: 'No product found for that barcode' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
 const createProduct = async (req, res) => {
   const { name, barcode, category, cost_price, selling_price, quantity, supplier_id, expiry_date, reorder_level } = req.body;
   try {
@@ -62,10 +83,6 @@ const deleteProduct = async (req, res) => {
     if (!product) return res.status(404).json({ error: 'Not found' });
 
     const role = req.user?.role === 'owner' ? 'ceo' : req.user?.role;
-    const isExpired = product.expiry_date ? new Date(product.expiry_date) <= new Date() : false;
-    if (role === 'manager' && !isExpired) {
-      return res.status(403).json({ error: 'Managers can only remove expired products' });
-    }
 
     await db.query('DELETE FROM products WHERE id=$1', [id]);
     res.status(204).send();
@@ -75,4 +92,4 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-module.exports = { listProducts, getProduct, createProduct, updateProduct, deleteProduct };
+module.exports = { listProducts, getProduct, getProductByBarcode, createProduct, updateProduct, deleteProduct };

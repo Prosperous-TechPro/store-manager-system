@@ -7,13 +7,8 @@ const Products = () => {
   const user = JSON.parse(localStorage.getItem('user') || 'null')
   const role = user?.role === 'owner' ? 'ceo' : user?.role
   const canManageProducts = ['manager', 'ceo'].includes(role)
-  const isExpired = (expiryDate) => {
-    if (!expiryDate) return false
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    return new Date(expiryDate).getTime() <= today.getTime()
-  }
-  const canDeleteProducts = (product) => role === 'ceo' || (role === 'manager' && isExpired(product.expiry_date))
+  const canAddProducts = role === 'manager'
+  const canDeleteProducts = () => ['manager', 'ceo'].includes(role)
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -95,7 +90,7 @@ const Products = () => {
               <button className="button-secondary search-button" type="button" onClick={onClearSearch}>Clear</button>
             )}
           </form>
-          {canManageProducts ? (
+          {canAddProducts ? (
             <button className="button-primary" onClick={onCreate}>Add Product</button>
           ) : (
             <span className="nav-chip">Read only</span>
@@ -122,7 +117,7 @@ const Products = () => {
                     <td>
                       <div className="table-actions">
                         {canManageProducts && <button className="button-secondary" onClick={()=>onEdit(p)}>Edit</button>}
-                        {canDeleteProducts(p) && <button className="button-danger" onClick={()=>onDelete(p.id)}>{role === 'manager' ? 'Remove expired' : 'Delete'}</button>}
+                        {canDeleteProducts(p) && <button className="button-danger" onClick={()=>onDelete(p.id)}>Delete</button>}
                       </div>
                     </td>
                   </tr>
@@ -156,7 +151,7 @@ const Products = () => {
                   <div className="approval-card-actions">
                     <div className="table-actions">
                       {canManageProducts && <button className="button-secondary" onClick={()=>onEdit(p)}>Edit</button>}
-                      {canDeleteProducts && <button className="button-danger" onClick={()=>onDelete(p.id)}>Delete</button>}
+                      {canDeleteProducts(p) && <button className="button-danger" onClick={()=>onDelete(p.id)}>Delete</button>}
                     </div>
                   </div>
                 </article>

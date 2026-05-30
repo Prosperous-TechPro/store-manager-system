@@ -27,10 +27,11 @@ const App = () => {
   const token = localStorage.getItem('token')
   const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
   const currentRole = currentUser?.role === 'owner' ? 'ceo' : currentUser?.role
+  const canViewDashboard = ['casher', 'manager', 'ceo', 'admin'].includes(currentRole)
   const canViewManagement = ['manager', 'ceo', 'admin'].includes(currentRole)
   const canViewAlerts = ['manager', 'ceo', 'admin'].includes(currentRole)
   const canViewRequests = ['manager', 'ceo'].includes(currentRole)
-  const canViewSales = ['casher', 'manager', 'saler', 'ceo', 'admin'].includes(currentRole)
+  const canViewSales = ['casher'].includes(currentRole)
   const location = useLocation()
 
   useEffect(() => {
@@ -57,8 +58,8 @@ const App = () => {
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route path="/cookie-policy" element={<CookiePolicy />} />
-        <Route path="/dashboard" element={token ? (canViewManagement ? <Dashboard /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
-        <Route path="/dashboard/:metricId" element={token ? (canViewManagement ? <DashboardDetails /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
+        <Route path="/dashboard" element={token ? (canViewDashboard ? <Dashboard /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
+        <Route path="/dashboard/:metricId" element={token ? <DashboardDetails /> : <Navigate to="/login" />} />
         <Route path="/alerts" element={token ? (canViewAlerts ? <Alerts /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
         <Route path="/alerts/:metricId" element={token ? (canViewAlerts ? <AlertsDetails /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
         <Route path="/requests" element={token ? (canViewRequests ? <Approvals /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />

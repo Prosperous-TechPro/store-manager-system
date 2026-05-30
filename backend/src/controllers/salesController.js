@@ -35,6 +35,21 @@ const createSale = async (req, res) => {
   }
 };
 
+const getSalesSummary = async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT
+         COALESCE(SUM(total_amount), 0)::numeric AS total_sales,
+         COUNT(*)::int AS transactions
+       FROM sales`
+    );
+    res.json(result.rows[0] || { total_sales: 0, transactions: 0 });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
 const listSales = async (req, res) => {
   try {
     const result = await db.query('SELECT * FROM sales ORDER BY date DESC LIMIT 100');
@@ -101,4 +116,4 @@ const listSalesDetails = async (req, res) => {
   }
 };
 
-module.exports = { createSale, listSales, listSalesDetails };
+module.exports = { createSale, getSalesSummary, listSales, listSalesDetails };

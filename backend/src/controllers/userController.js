@@ -1,5 +1,14 @@
 const db = require('../models/db');
 
+const countActiveManagers = async (excludeUserId = null) => {
+  const query = excludeUserId
+    ? 'SELECT COUNT(*)::int AS total FROM users WHERE deleted_at IS NULL AND lower(role) = \'manager\' AND id <> $1'
+    : 'SELECT COUNT(*)::int AS total FROM users WHERE deleted_at IS NULL AND lower(role) = \'manager\'';
+  const params = excludeUserId ? [excludeUserId] : [];
+  const result = await db.query(query, params);
+  return result.rows[0]?.total || 0;
+};
+
 const listUsers = async (req, res) => {
   try {
     const result = await db.query(
@@ -37,6 +46,12 @@ const approveUser = async (req, res) => {
     if (!target) return res.status(404).json({ error: 'User not found' });
     if (String(target.role || '').toLowerCase() === 'manager' && String(req.user.role || '').toLowerCase() !== 'ceo') {
       return res.status(403).json({ error: 'Manager accounts must be approved by CEO' });
+    }
+    if (String(target.role || '').toLowerCase() === 'manager') {
+      const managerCount = await countActiveManagers(targetId);
+      if (managerCount >= 2) {
+        return res.status(403).json({ error: 'Only two manager accounts are allowed' });
+      }
     }
 
     const result = await db.query(

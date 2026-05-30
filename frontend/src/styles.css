@@ -55,6 +55,11 @@ body {
     color: var(--text);
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background: linear-gradient(180deg, var(--bg-0) 0%, var(--bg-2) 48%, var(--bg-1) 100%);
+	overflow-x: hidden;
+}
+
+html {
+	scroll-behavior: smooth;
 }
 
 a { color: inherit; text-decoration: none; }
@@ -75,13 +80,14 @@ button:disabled { cursor: not-allowed; opacity: 0.7; transform: none; }
    3) Layout & Page containers
    Global layout classes used across pages.
    ------------------------------ */
-.app-shell { min-height: 100vh; }
+.app-shell { min-height: 100vh; display: flex; flex-direction: column; }
 
 .app-shell {
 	--sidebar-width: 0px;
 }
 
 .app-main {
+	flex: 1 1 auto;
 	min-width: 0;
 	margin-left: var(--sidebar-width);
 	padding-top: 64px;
@@ -95,6 +101,7 @@ button:disabled { cursor: not-allowed; opacity: 0.7; transform: none; }
 
 .page {
 	width: min(1160px, calc(100% - 32px));
+	max-width: 100%;
 	margin: 0 auto;
 	padding: 28px 0 48px;
 }
@@ -147,6 +154,7 @@ button:disabled { cursor: not-allowed; opacity: 0.7; transform: none; }
 	flex-wrap: nowrap;
 	min-width: 0;
 }
+.nav-actions { flex-shrink: 0; }
 .nav-links { gap: 8px; justify-content: center; overflow: hidden; }
 .nav-center { position: static; transform: none; justify-self: center; width: 100%; gap: 8px; display:flex; }
 .nav-right { display: flex; align-items: center; gap: 10px; }
@@ -329,6 +337,7 @@ button:disabled { cursor: not-allowed; opacity: 0.7; transform: none; }
 	gap: 10px;
 	flex-wrap: wrap;
 	min-width: min(100%, 520px);
+	max-width: 100%;
 }
 .search-bar input {
 	min-width: min(100%, 280px);
@@ -467,6 +476,7 @@ input:focus, select:focus { border-color: rgba(38, 208, 206, 0.7); box-shadow: 0
    ------------------------------ */
 .table-card, .panel, .auth-card { border-radius: 24px; padding: 22px; }
 .table-card { overflow-x: auto; }
+.data-table-view { max-width: 100%; }
 .data-table-view { display: block; }
 .data-card-list { display: none; gap: 14px; }
 .data-card { display: grid; gap: 14px; }
@@ -840,6 +850,10 @@ select:focus {
 	gap: 18px;
 }
 
+.drawer-panel, .table-card, .panel, .auth-card, .hero-card {
+	max-width: 100%;
+}
+
 .drawer-header {
 	display: flex;
 	align-items: flex-start;
@@ -913,6 +927,39 @@ select:focus {
 	.hero-actions {
 		flex-direction: column;
 		align-items: stretch;
+	}
+
+	.topbar {
+		height: auto;
+		min-height: 56px;
+		padding: 10px 12px;
+		flex-wrap: wrap;
+	}
+
+	.topbar .topbar-brand {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+
+	.brand-copy span:first-child {
+		font-size: 0.72rem;
+	}
+
+	.brand-copy span:last-child {
+		font-size: 0.56rem;
+	}
+
+	.mobile-menu {
+		padding: 10px;
+		gap: 6px;
+		flex-wrap: wrap;
+	}
+
+	.mobile-menu .nav-link,
+	.mobile-menu .nav-alert-link {
+		width: auto;
+		flex: 1 1 calc(50% - 6px);
+		justify-content: center;
 	}
 
 	.products-actions {
@@ -998,6 +1045,17 @@ select:focus {
 		align-items: stretch;
 	}
 
+	.drawer-inline-input > button,
+	.drawer-inline-input > input {
+		width: 100%;
+	}
+
+	.search-bar,
+	.search-bar input,
+	.search-button {
+		width: 100%;
+	}
+
 	.footer-grid,
 	.footer-meta {
 		grid-template-columns: 1fr;
@@ -1009,6 +1067,22 @@ select:focus {
 @media (max-width: 560px) {
 	.page {
 		width: min(100% - 16px, 1160px);
+	}
+
+	.app-main {
+		padding-top: 58px;
+	}
+
+	.topbar {
+		gap: 8px;
+	}
+
+	.nav-account-toggle {
+		min-width: 0;
+	}
+
+	.nav-account-copy {
+		max-width: 120px;
 	}
 
 	.hero-card,
@@ -1029,6 +1103,10 @@ select:focus {
 
 	.metric-grid {
 		grid-template-columns: 1fr;
+	}
+
+	.metric-card-link {
+		width: 100%;
 	}
 
 	.metric-card {
@@ -1066,5 +1144,30 @@ select:focus {
 
 	.nav-account-toggle {
 		width: 100%;
+	}
+
+	.mobile-menu .nav-link,
+	.mobile-menu .nav-alert-link {
+		flex: 1 1 100%;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*, *::before, *::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+
+	button:hover,
+	button:focus-visible,
+	.nav-link:hover,
+	.nav-link:hover::after,
+	.metric-card-link:hover,
+	.button-primary:hover,
+	.button-secondary:hover,
+	.nav-chip-link:hover {
+		transform: none !important;
 	}
 }

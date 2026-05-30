@@ -15,6 +15,8 @@ const ProductForm = ({ product, onClose, onSaved }) => {
   const [supplierDraft, setSupplierDraft] = useState({ id: '', name: '', contact: '' })
   const [supplierBusy, setSupplierBusy] = useState(false)
   const [supplierMessage, setSupplierMessage] = useState('')
+  const [barcodeLookupMessage, setBarcodeLookupMessage] = useState('')
+  const [barcodeLookupBusy, setBarcodeLookupBusy] = useState(false)
   const nameRef = useRef(null)
 
   const generateBarcode = (seed = '') => {
@@ -44,6 +46,7 @@ const ProductForm = ({ product, onClose, onSaved }) => {
       setTimeout(()=>{ nameRef.current && nameRef.current.focus() }, 100)
     }
     setBarcodeTouched(Boolean(product?.barcode))
+    setBarcodeLookupMessage('')
   },[product])
 
   useEffect(() => {
@@ -81,6 +84,49 @@ const ProductForm = ({ product, onClose, onSaved }) => {
 
   const change = (k,v) => setForm(prev=>({ ...prev, [k]: v }))
   const changeSupplierDraft = (k, v) => setSupplierDraft(prev => ({ ...prev, [k]: v }))
+
+  const applyScannedProduct = (item) => {
+    if (!item) return
+    setForm(prev => ({
+      ...prev,
+      name: item.name || prev.name,
+      barcode: item.barcode || prev.barcode,
+      category: item.category || prev.category,
+      cost_price: item.cost_price ?? prev.cost_price,
+      selling_price: item.selling_price ?? prev.selling_price,
+      quantity: item.quantity ?? prev.quantity,
+      supplier_id: item.supplier_id || prev.supplier_id,
+      expiry_date: item.expiry_date || prev.expiry_date,
+      reorder_level: item.reorder_level ?? prev.reorder_level,
+    }))
+    setBarcodeTouched(Boolean(item.barcode))
+  }
+
+  const lookupBarcode = async (rawBarcode = form.barcode) => {
+    const barcode = String(rawBarcode || '').trim()
+    if (!barcode) {
+      setBarcodeLookupMessage('Scan or enter a barcode first.')
+      return
+    }
+
+    setBarcodeLookupBusy(true)
+    setBarcodeLookupMessage('')
+    try {
+      const found = await api.get(`/products/barcode/${encodeURIComponent(barcode)}`)
+      applyScannedProduct(found)
+      setBarcodeLookupMessage(`Loaded details for ${found?.name || 'the scanned item'}.`)
+    } catch (err) {
+      if (err?.status === 404) {
+        setBarcodeLookupMessage('No existing product matches that barcode. Fill in the details to add it.')
+        setForm(prev => ({ ...prev, barcode }))
+        setBarcodeTouched(true)
+        return
+      }
+      setBarcodeLookupMessage(err?.message || 'Failed to look up barcode details.')
+    } finally {
+      setBarcodeLookupBusy(false)
+    }
+  }
 
   const refreshSuppliers = async (selectId = '') => {
     const rows = await api.get('/suppliers')
@@ -213,10 +259,22 @@ const ProductForm = ({ product, onClose, onSaved }) => {
             <div className="form-field">
               <label>Barcode</label>
               <div className="drawer-inline-input">
-                <input placeholder="Auto-generated if empty" value={form.barcode} onChange={e=>{ setBarcodeTouched(true); change('barcode', e.target.value) }} />
+                <input
+                  placeholder="Scan or enter a barcode"
+                  value={form.barcode}
+                  onChange={e=>{ setBarcodeTouched(true); change('barcode', e.target.value) }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      lookupBarcode()
+                    }
+                  }}
+                />
+                <button type="button" className="button-secondary" onClick={()=>lookupBarcode()} disabled={barcodeLookupBusy}>{barcodeLookupBusy ? 'Scanning...' : 'Scan'}</button>
                 <button type="button" className="button-secondary" onClick={()=>{ setBarcodeTouched(true); change('barcode', generateBarcode(form.name || 'ITEM')) }}>Generate</button>
               </div>
-              <div className="helper-text">Auto-generated from the product name until you edit it.</div>
+              <div className="helper-text">Scan a barcode to pull product details from the store catalog, or generate a new one if this is a new item.</div>
+              {barcodeLookupMessage && <div className="section-note" style={{ marginTop: 6 }}>{barcodeLookupMessage}</div>}
             </div>
 
             <div className="form-field">

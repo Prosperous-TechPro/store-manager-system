@@ -21,8 +21,10 @@ const ForgotPassword = () => {
     if (!email) return setError('Email is required')
     setLoading(true)
     try {
-      await api.post('/auth/forgot-password', { email })
-      setMessage('We sent a reset code to the phone number on the account. Enter the code and choose a new password below.')
+      const body = await api.post('/auth/forgot-password', { email })
+      setMessage(body?.sms_sent === false
+        ? 'We could not send the reset SMS right now. If you already received a code, continue below or try again.'
+        : 'We sent a reset code to the phone number on the account. Enter the code and choose a new password below.')
       setStep('reset')
     } catch (err) {
       setError(err.message || 'Failed to request password reset')
@@ -72,7 +74,6 @@ const ForgotPassword = () => {
             </div>
             <div className="auth-actions">
               <button className="button-primary" type="submit" disabled={loading}>Send reset code</button>
-              <button className="button-secondary" type="button" onClick={() => setStep('reset')} disabled={loading}>I have a reset code</button>
               <Link className="button-secondary" to="/login">Back to login</Link>
             </div>
           </form>
