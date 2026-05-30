@@ -69,32 +69,34 @@ const Products = () => {
   })
 
   return (
-    <div className="page">
-      <section className="page-header">
-        <div>
+    <div className="page landing-page">
+      <section className="hero-card landing-hero">
+        <div className="hero-copy">
           <div className="auth-badge">Inventory</div>
           <h1 className="hero-title" style={{ fontSize: '2.1rem', marginTop: 6 }}>Products</h1>
           <p className="hero-subtitle">Add, review, and maintain your store catalogue in one clean view.</p>
         </div>
-        <div className="section-actions products-actions">
-          <form className="search-bar" onSubmit={onSearch}>
-            <input
-              type="search"
-              placeholder="Search products by name, barcode, supplier, category..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              aria-label="Search products"
-            />
-            <button className="button-secondary search-button" type="submit">Search</button>
-            {searchQuery && (
-              <button className="button-secondary search-button" type="button" onClick={onClearSearch}>Clear</button>
+        <div className="hero-showcase">
+          <div className="section-actions products-actions">
+            <form className="search-bar" onSubmit={onSearch}>
+              <input
+                type="search"
+                placeholder="Search products by name, barcode, supplier, category..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                aria-label="Search products"
+              />
+              <button className="button-secondary search-button" type="submit">Search</button>
+              {searchQuery && (
+                <button className="button-secondary search-button" type="button" onClick={onClearSearch}>Clear</button>
+              )}
+            </form>
+            {canAddProducts ? (
+              <button className="button-primary" onClick={onCreate}>Add Product</button>
+            ) : (
+              <span className="nav-chip">Read only</span>
             )}
-          </form>
-          {canAddProducts ? (
-            <button className="button-primary" onClick={onCreate}>Add Product</button>
-          ) : (
-            <span className="nav-chip">Read only</span>
-          )}
+          </div>
         </div>
       </section>
 

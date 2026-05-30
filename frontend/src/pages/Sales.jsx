@@ -56,7 +56,28 @@ const Sales = () => {
   }
 
   return (
-    <div className="page static-page">
+    <div className="page landing-page">
+      <section className="hero-card landing-hero">
+        <div className="hero-copy">
+          <div className="auth-badge">Cashier workspace</div>
+          <h1 className="hero-title">Record daily sales with a clean, focused interface.</h1>
+          <p className="hero-subtitle">Keep the sales total current and visible while you work. This page uses the same visual language as the homepage so the whole system feels consistent.</p>
+        </div>
+
+        <div className="hero-showcase">
+          <div className="metric-grid landing-metrics">
+            <div className="metric-card metric-success">
+              <p className="metric-label">Sales total</p>
+              <div className="metric-value">GHS {Number.parseFloat(summary.total_sales || 0).toFixed(2)}</div>
+            </div>
+            <div className="metric-card metric-accent">
+              <p className="metric-label">Transactions</p>
+              <div className="metric-value">{summary.transactions}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="panel" style={{ maxWidth: 640 }}>
         <form onSubmit={submit} className="form-grid">
           <div className="form-field">
