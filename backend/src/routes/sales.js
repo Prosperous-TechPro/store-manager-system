@@ -6,7 +6,7 @@ const { createSale, getSalesSummary, listSales, listSalesDetails, resetSalesTota
 router.post('/', authenticate, authorize(['casher']), createSale);
 router.get('/summary', authenticate, authorize(['casher', 'manager', 'ceo']), getSalesSummary);
 router.post('/reset', authenticate, authorize(['manager']), resetSalesTotal);
-router.get('/details', authenticate, authorize(['casher']), listSalesDetails);
-router.get('/', authenticate, authorize(['casher']), listSales);
+router.get('/details', authenticate, authorize(['casher', 'manager', 'ceo', 'admin']), listSalesDetails);
+router.get('/', authenticate, authorize(['casher', 'manager', 'ceo', 'admin']), listSales);
 
 module.exports = router;

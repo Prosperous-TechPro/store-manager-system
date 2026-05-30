@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
+import { readSalesSnapshot } from '../services/salesSummary'
 import useSyncRefresh from '../hooks/useSyncRefresh'
 
 const Dashboard = () => {
@@ -28,37 +29,28 @@ const Dashboard = () => {
     setLoading(true)
     try{
       if (isCashier) {
-        let salesTotal = 0
-        let transactions = 0
-        try {
-          const summary = await api.get('/sales/summary')
-          salesTotal = Number.parseFloat(summary?.total_sales || 0)
-          transactions = Number.parseInt(summary?.transactions || 0, 10)
-        } catch (summaryErr) {
-          const sales = await api.get('/sales')
-          salesTotal = Array.isArray(sales)
-            ? sales.reduce((sum, sale) => sum + Number.parseFloat(sale.total_amount || 0), 0)
-            : 0
-          transactions = Array.isArray(sales) ? sales.length : 0
-          console.warn('Sales summary unavailable, using sales list fallback', summaryErr)
-        }
+        const { total_sales: salesTotal, transactions } = await readSalesSnapshot()
         setMetrics({ totalProducts: 0, totalQuantity: 0, lowStock: 0, salesTotal, transactions, expiredProducts: 0, missingProducts: 0 })
         return
       }
 
-      const [products, sales, expiry, missing] = await Promise.all([
+      const [productsResult, salesSnapshotResult, expiryResult, missingResult] = await Promise.allSettled([
         api.get('/products'),
-        api.get('/sales'),
+        readSalesSnapshot(),
         api.get('/reports/expiry'),
         api.get('/reports/missing'),
       ])
+      const products = productsResult.status === 'fulfilled' && Array.isArray(productsResult.value) ? productsResult.value : []
+      const salesSnapshot = salesSnapshotResult.status === 'fulfilled' ? salesSnapshotResult.value : { total_sales: 0, transactions: 0 }
+      const expiry = expiryResult.status === 'fulfilled' && Array.isArray(expiryResult.value) ? expiryResult.value : []
+      const missing = missingResult.status === 'fulfilled' && Array.isArray(missingResult.value) ? missingResult.value : []
       const totalProducts = products.length
       const totalQuantity = products.reduce((s,p)=>s + (p.quantity||0), 0)
       const lowStock = products.filter(p=> (p.reorder_level || 0) >= (p.quantity || 0)).length
-      const salesTotal = sales.reduce((s,x)=> s + parseFloat(x.total_amount || 0), 0)
-      const transactions = sales.length
-      const expiredProducts = Array.isArray(expiry) ? expiry.filter((item) => item.status === 'expired').length : 0
-      const missingProducts = Array.isArray(missing) ? missing.length : 0
+      const salesTotal = Number.parseFloat(salesSnapshot.total_sales || 0)
+      const transactions = Number.parseInt(salesSnapshot.transactions || 0, 10)
+      const expiredProducts = expiry.filter((item) => item.status === 'expired').length
+      const missingProducts = missing.length
       setMetrics({ totalProducts, totalQuantity, lowStock, salesTotal, transactions, expiredProducts, missingProducts })
     }catch(e){
       console.error(e)

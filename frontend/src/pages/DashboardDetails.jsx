@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import api from '../services/api'
+import { readSalesSnapshot } from '../services/salesSummary'
 import useSyncRefresh from '../hooks/useSyncRefresh'
 
 const metricTitles = {
@@ -25,7 +26,6 @@ const DashboardDetails = () => {
   const { metricId } = useParams()
   const user = JSON.parse(localStorage.getItem('user') || 'null')
   const role = user?.role === 'owner' ? 'ceo' : user?.role
-  const isCashier = role === 'casher'
   const isManager = role === 'manager'
   const canViewDashboard = ['manager', 'ceo', 'admin'].includes(role)
   const canViewSalesTotal = ['casher', 'manager', 'ceo'].includes(role)
@@ -47,22 +47,21 @@ const DashboardDetails = () => {
 
     try {
       if (metricId === 'sales-total') {
-        const summaryData = await api.get('/sales/summary')
+        const [summaryDataResult, salesResult] = await Promise.allSettled([
+          readSalesSnapshot(),
+          api.get('/sales'),
+        ])
+        const summaryData = summaryDataResult.status === 'fulfilled' ? summaryDataResult.value : { total_sales: 0, transactions: 0, sales: [] }
         const totalSales = Number.parseFloat(summaryData?.total_sales || 0)
         const transactions = Number.parseInt(summaryData?.transactions || 0, 10)
 
         setSummary(`There are ${transactions} sales transactions totaling ${Number.isFinite(totalSales) ? totalSales.toFixed(2) : '0.00'}.`)
-        if (isCashier) {
-          const sales = await api.get('/sales')
-          const salesList = Array.isArray(sales) ? sales : []
-          setItems(salesList.map((sale) => ({
-            key: sale.id,
-            label: sale.date ? new Date(sale.date).toLocaleString() : `Sale #${sale.id}`,
-            meta: `Cashier: ${sale.cashier_name || '-'} | Total amount: ${Number.parseFloat(sale.total_amount || 0).toFixed(2)}`,
-          })))
-        } else {
-          setItems([])
-        }
+        const salesList = salesResult.status === 'fulfilled' && Array.isArray(salesResult.value) ? salesResult.value : Array.isArray(summaryData.sales) ? summaryData.sales : []
+        setItems(salesList.map((sale) => ({
+          key: sale.id,
+          label: sale.date ? new Date(sale.date).toLocaleString() : `Sale #${sale.id}`,
+          meta: `Cashier: ${sale.cashier_name || '-'} | Total amount: ${Number.parseFloat(sale.total_amount || 0).toFixed(2)}`,
+        })))
         return
       }
 

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import api from '../services/api'
+import { readSalesSnapshot } from '../services/salesSummary'
 
 const Sales = () => {
   const [amount, setAmount] = useState('')
@@ -10,23 +11,7 @@ const Sales = () => {
   const [summaryLoaded, setSummaryLoaded] = useState(false)
 
   const readSalesSummary = useCallback(async () => {
-    try {
-      const body = await api.get('/sales/summary')
-      return {
-        total_sales: Number.parseFloat(body?.total_sales || 0),
-        transactions: Number.parseInt(body?.transactions || 0, 10),
-      }
-    } catch (summaryErr) {
-      const sales = await api.get('/sales')
-      const total_sales = Array.isArray(sales)
-        ? sales.reduce((sum, sale) => sum + Number.parseFloat(sale.total_amount || 0), 0)
-        : 0
-      return {
-        total_sales,
-        transactions: Array.isArray(sales) ? sales.length : 0,
-        fallbackError: summaryErr,
-      }
-    }
+    return readSalesSnapshot()
   }, [])
 
   const loadSummary = useCallback(async () => {
