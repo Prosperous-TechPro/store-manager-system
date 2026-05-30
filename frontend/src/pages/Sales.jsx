@@ -7,18 +7,43 @@ const Sales = () => {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [summary, setSummary] = useState({ total_sales: 0, transactions: 0 })
+  const [summaryLoaded, setSummaryLoaded] = useState(false)
 
-  const loadSummary = useCallback(async () => {
+  const readSalesSummary = useCallback(async () => {
     try {
       const body = await api.get('/sales/summary')
-      setSummary({
+      return {
         total_sales: Number.parseFloat(body?.total_sales || 0),
         transactions: Number.parseInt(body?.transactions || 0, 10),
+      }
+    } catch (summaryErr) {
+      const sales = await api.get('/sales')
+      const total_sales = Array.isArray(sales)
+        ? sales.reduce((sum, sale) => sum + Number.parseFloat(sale.total_amount || 0), 0)
+        : 0
+      return {
+        total_sales,
+        transactions: Array.isArray(sales) ? sales.length : 0,
+        fallbackError: summaryErr,
+      }
+    }
+  }, [])
+
+  const loadSummary = useCallback(async () => {
+    setSummaryLoaded(false)
+    try {
+      const nextSummary = await readSalesSummary()
+      setSummary({
+        total_sales: nextSummary.total_sales,
+        transactions: nextSummary.transactions,
       })
     } catch (err) {
       console.error(err)
+      setSummary({ total_sales: 0, transactions: 0 })
+    } finally {
+      setSummaryLoaded(true)
     }
-  }, [])
+  }, [readSalesSummary])
 
   const broadcastSync = () => {
     const stamp = String(Date.now())
@@ -68,11 +93,11 @@ const Sales = () => {
           <div className="metric-grid landing-metrics">
             <div className="metric-card metric-success">
               <p className="metric-label">Sales total</p>
-              <div className="metric-value">GHS {Number.parseFloat(summary.total_sales || 0).toFixed(2)}</div>
+              <div className="metric-value">{summaryLoaded ? `GHS ${Number.parseFloat(summary.total_sales || 0).toFixed(2)}` : 'Loading...'}</div>
             </div>
             <div className="metric-card metric-accent">
               <p className="metric-label">Transactions</p>
-              <div className="metric-value">{summary.transactions}</div>
+              <div className="metric-value">{summaryLoaded ? summary.transactions : 'Loading...'}</div>
             </div>
           </div>
         </div>

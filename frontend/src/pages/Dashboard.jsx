@@ -28,9 +28,20 @@ const Dashboard = () => {
     setLoading(true)
     try{
       if (isCashier) {
-        const summary = await api.get('/sales/summary')
-        const salesTotal = Number.parseFloat(summary?.total_sales || 0)
-        const transactions = Number.parseInt(summary?.transactions || 0, 10)
+        let salesTotal = 0
+        let transactions = 0
+        try {
+          const summary = await api.get('/sales/summary')
+          salesTotal = Number.parseFloat(summary?.total_sales || 0)
+          transactions = Number.parseInt(summary?.transactions || 0, 10)
+        } catch (summaryErr) {
+          const sales = await api.get('/sales')
+          salesTotal = Array.isArray(sales)
+            ? sales.reduce((sum, sale) => sum + Number.parseFloat(sale.total_amount || 0), 0)
+            : 0
+          transactions = Array.isArray(sales) ? sales.length : 0
+          console.warn('Sales summary unavailable, using sales list fallback', summaryErr)
+        }
         setMetrics({ totalProducts: 0, totalQuantity: 0, lowStock: 0, salesTotal, transactions, expiredProducts: 0, missingProducts: 0 })
         return
       }
