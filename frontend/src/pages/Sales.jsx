@@ -45,7 +45,9 @@ const Sales = () => {
             <input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
           </div>
           {error && <div className="error-banner">{error}</div>}
-          {message && <div className="success-banner">{message}</div>}
+          {message && (
+            <div className={message.startsWith('Recorded GHS') ? 'success-banner success-banner--black' : 'success-banner'}>{message}</div>
+          )}
           <div className="auth-actions">
             <button type="submit" className="button-primary" disabled={saving}>{saving ? 'Saving...' : 'Save sales amount'}</button>
           </div>

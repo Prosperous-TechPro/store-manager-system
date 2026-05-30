@@ -22,11 +22,12 @@ SMS verification (Hubtel)
 - POST /api/sms/verify { phone, code } -> verify last sent code
 
 Configure in `.env`:
-- `HUBTEL_API_URL` - Hubtel send-message endpoint (defaults to `https://api.hubtel.com/v1/messages`)
+- `HUBTEL_API_URL` - Hubtel send-message endpoint (for local query-auth testing, `https://smsc.hubtel.com/v1/messages/send` works with the client-id/client-secret fallback)
 - `HUBTEL_API_KEY` - Hubtel API key used for Bearer auth
+- `HUBTEL_SMS_CLIENT_ID` and `HUBTEL_SMS_CLIENT_SECRET` - local fallback for Hubtel query auth when testing without an API key
 - `HUBTEL_SENDER` - optional sender name
 
-Only the API-key flow is supported now; remove older Hubtel auth variables to avoid misconfiguration.
+Prefer the API-key flow in production. The app now requires `HUBTEL_API_KEY` in production, but local development still supports the client-id/client-secret fallback so the SMS flow can be tested end to end.
 
 Notes:
 - Secure JWT_SECRET in production

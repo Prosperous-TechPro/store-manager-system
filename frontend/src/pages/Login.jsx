@@ -1,10 +1,11 @@
-import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 
 const Login = () => {
   const navigate = useNavigate()
-  const [mode, setMode] = useState('login')
+  const [searchParams] = useSearchParams()
+  const [mode, setMode] = useState(searchParams.get('mode') || 'login')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -27,6 +28,9 @@ const Login = () => {
     } else {
       if (!name || !email || !password || !phone) return setError('Name, email, password, and phone are required')
       if (password.length < 8) return setError('Password must be at least 8 characters long')
+      // require at least one uppercase, one lowercase, and one number
+      const pwdRegex = /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/
+      if (!pwdRegex.test(password)) return setError('Password must include uppercase, lowercase, and a number')
       if (password !== confirmPassword) return setError('Passwords do not match')
       if (!policyAccepted) return setError('Please accept the store policy to continue')
     }
@@ -43,8 +47,9 @@ const Login = () => {
           setError('Phone number is required for OTP verification')
           return
         }
-        await api.post('/auth/register', { name, email, password, phone: normalizedPhone, role })
-        navigate(`/verify-account?phone=${encodeURIComponent(normalizedPhone)}&email=${encodeURIComponent(email)}`)
+        const body = await api.post('/auth/register', { name, email, password, phone: normalizedPhone, role })
+        const smsStatus = body?.sms_sent === false ? 'failed' : 'sent'
+        navigate(`/verify-account?phone=${encodeURIComponent(normalizedPhone)}&email=${encodeURIComponent(email)}&sms=${smsStatus}`)
         return
       }
     } catch (err) {
@@ -61,6 +66,16 @@ const Login = () => {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    // Prefill mode/email/phone when redirected from verify step
+    const smode = searchParams.get('mode')
+    const sphone = searchParams.get('phone')
+    const semail = searchParams.get('email')
+    if (smode) setMode(smode)
+    if (semail) setEmail(semail)
+    if (sphone) setPhone(sphone)
+  }, [searchParams])
 
   return (
     <div className="auth-wrap page">
@@ -105,7 +120,7 @@ const Login = () => {
                 </div>
               </div>
               <div className="form-field">
-                <label>Phone number <span className="helper-text">Required for OTP verification</span></label>
+                <label>Phone number <span className="helper-text">Required for SMS verification</span></label>
                 <input type="tel" value={phone} onChange={(e)=>setPhone(e.target.value)} disabled={loading} placeholder="e.g. 0241234567 or +233241234567" />
               </div>
               <div className="form-field">
@@ -122,7 +137,9 @@ const Login = () => {
             </>
           )}
           {success && <div className="success-banner">{success}</div>}
-          {error && <div className="error-banner">{error}</div>}
+          {error && (
+            <div className={error === 'Email and password are required' ? 'error-banner error-banner--black' : 'error-banner'}>{error}</div>
+          )}
           <div className="auth-actions">
             <button className="button-primary" type="submit" disabled={loading}>
               {loading ? (mode === 'login' ? 'Signing in...' : 'Creating account...') : (mode === 'login' ? 'Login' : 'Create account')}

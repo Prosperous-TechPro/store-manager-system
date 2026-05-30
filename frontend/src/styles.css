@@ -714,7 +714,7 @@ tbody tr:hover {
 }
 
 .form-field label {
-	color: #d9e5f7;
+	color: #a8c9fc;
 	font-size: 0.92rem;
 	font-weight: 700;
 }
@@ -726,7 +726,7 @@ select {
 	border-radius: 14px;
 	border: 1px solid rgba(255, 255, 255, 0.12);
 	color: var(--text);
-	background: rgba(255, 255, 255, 0.04);
+	background: rgba(156, 125, 125, 0.04);
 	outline: none;
 	transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
@@ -741,7 +741,7 @@ select:focus {
 /* Role select styling: light blue background for better visibility */
 .role-select {
 	background: linear-gradient(180deg, #718a96 0%, #a0bed1 100%);
-	color: #022033;
+	color: #80447d;
 	border-color: rgba(2, 32, 51, 0.12);
 }
 .role-select:focus {
@@ -756,17 +756,27 @@ select:focus {
 .error-banner {
 	padding: 12px 14px;
 	border-radius: 14px;
-	color: #ffd6d6;
-	background: rgba(255, 107, 107, 0.14);
-	border: 1px solid rgba(255, 107, 107, 0.25);
+	color: #ee3c3c;
+	background: rgba(248, 220, 220, 0.14);
+	border: 1px solid rgba(245, 9, 9, 0.25);
+}
+
+/* Specific override for the 'Email and password are required' message */
+.error-banner--black {
+  color: #b10707;
 }
 
 .success-banner {
 	padding: 12px 14px;
 	border-radius: 14px;
-	color: #d4ffe8;
+	color: #a8c0b3;
 	background: rgba(78, 229, 155, 0.14);
 	border: 1px solid rgba(78, 229, 155, 0.25);
+}
+
+/* Specific success message color for sales recording */
+.success-banner--black {
+  color: #000000;
 }
 
 .empty-state,

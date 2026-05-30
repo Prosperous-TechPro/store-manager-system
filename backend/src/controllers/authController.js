@@ -7,6 +7,7 @@ const sms = require('./smsController');
 const ALLOWED_ROLES = new Set(['casher', 'manager', 'saler', 'ceo', 'admin']);
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GH_PHONE_REGEX = /^(?:\+233|0)\d{9}$/;
+const PASSWORD_REGEX = /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/; // at least one lowercase, one uppercase, one digit
 
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
 
@@ -53,6 +54,7 @@ const register = async (req, res) => {
   const { name, email, password, role = 'casher', phone } = req.body;
   if (!name || !email || !password || !phone) return res.status(400).json({ error: 'Name, email, password, and phone are required' });
   if (String(password).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+  if (!PASSWORD_REGEX.test(String(password))) return res.status(400).json({ error: 'Password must include uppercase, lowercase, and a number' });
   const normalizedRole = normalizeRole(role || 'casher');
   const normalizedEmail = normalizeEmail(email);
   const normalizedPhone = normalizePhone(phone);
@@ -97,24 +99,26 @@ const register = async (req, res) => {
       );
       const user = result.rows[0];
 
-      const smsResult = client
-        ? await sms.generateAndSendCode(normalizedPhone, 'signup', { dbClient: client })
-        : await sms.generateAndSendCode(normalizedPhone, 'signup');
-      if (!smsResult.sent) {
-        throw new Error(smsResult.reused ? 'A verification code is already active for this phone' : 'Failed to send signup SMS');
+      await tx.query('COMMIT');
+
+      let smsSent = false;
+      let smsMessage = null;
+      try {
+        const smsResult = await sms.generateAndSendCode(normalizedPhone, 'signup');
+        smsSent = Boolean(smsResult && smsResult.sent);
+      } catch (smsErr) {
+        smsMessage = smsErr && smsErr.message ? smsErr.message : 'Failed to send signup SMS';
+        console.warn('Failed to send signup SMS', smsMessage);
       }
 
-      await tx.query('COMMIT');
       return res.status(201).json({
         ...user,
         verification_required: true,
         approval_required: !approved,
         approval_required_by: !approved ? (normalizedRole === 'manager' ? 'ceo' : 'manager_or_ceo') : null,
+        sms_sent: smsSent,
+        sms_error: smsSent ? null : smsMessage,
       });
-    } catch (sendErr) {
-      await tx.query('ROLLBACK');
-      console.warn('Failed to send signup SMS', sendErr.message || sendErr);
-      return res.status(502).json({ error: 'We could not send the verification SMS. Account was not created.' });
     } finally {
       tx.release();
     }
@@ -153,10 +157,16 @@ const verifyPhone = async (req, res) => {
     const r = await smsCtrl.verifyCodeInternal(phone, code, 'signup');
     if (!r.ok) return res.status(400).json({ error: r.reason || 'Invalid code' });
     const normalizedPhone = normalizePhone(phone);
-    await db.query('UPDATE users SET phone_verified=true WHERE phone=$1', [normalizedPhone]);
+    // If an account exists with this phone, mark phone_verified and issue session.
     const result = await db.query('SELECT id,name,email,role,phone,approved FROM users WHERE phone=$1', [normalizedPhone]);
     const user = result.rows[0];
-    if (!user) return res.status(404).json({ error: 'Account not found' });
+    if (!user) {
+      // No account yet — verification of phone succeeded. Let the frontend know so it can continue registration flow.
+      return res.json({ ok: true, account_exists: false, message: 'Phone verified — no associated account' });
+    }
+
+    // account exists: set verified flag and continue to issue session if approved
+    await db.query('UPDATE users SET phone_verified=true WHERE phone=$1', [normalizedPhone]);
     if (!user.approved) {
       return res.status(403).json({
         error: getApprovalError(user.role),
@@ -164,10 +174,7 @@ const verifyPhone = async (req, res) => {
       });
     }
     const session = issueAuthSession(user);
-    res.json({
-      ok: true,
-      ...session,
-    });
+    res.json({ ok: true, ...session });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Verify phone failed' });
@@ -245,6 +252,7 @@ const updateMe = async (req, res) => {
 
     if (newPassword) {
       if (String(newPassword).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+      if (!PASSWORD_REGEX.test(String(newPassword))) return res.status(400).json({ error: 'Password must include uppercase, lowercase, and a number' });
       nextPasswordHash = await bcrypt.hash(newPassword, 10);
     }
 
@@ -420,6 +428,7 @@ const resetPassword = async (req, res) => {
   const { email, code, newPassword } = req.body;
   if (!email || !code || !newPassword) return res.status(400).json({ error: 'Email, code, and new password are required' });
   if (String(newPassword).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+  if (!PASSWORD_REGEX.test(String(newPassword))) return res.status(400).json({ error: 'Password must include uppercase, lowercase, and a number' });
   try {
     const normalizedEmail = normalizeEmail(email);
     const result = await db.query('SELECT id,name,email,role,phone,approved,deleted_at FROM users WHERE lower(email)=lower($1)', [normalizedEmail]);
