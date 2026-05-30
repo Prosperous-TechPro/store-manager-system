@@ -81,11 +81,34 @@ const buildHubtelRequest = (phone, content) => {
 const buildHubtelFallbackRequests = (phone, content) => {
   const normalizedPhone = formatRecipientForHubtel(phone);
   const baseUrl = getHubtelUrl();
+  const otpBase = process.env.HUBTEL_OTP_API_URL;
   const sender = process.env.HUBTEL_SENDER || process.env.HUBTEL_SMS_FROM || 'STORE';
   const clientId = process.env.HUBTEL_SMS_CLIENT_ID;
   const clientSecret = process.env.HUBTEL_SMS_CLIENT_SECRET;
   const apiKey = process.env.HUBTEL_API_KEY;
   const requestList = [];
+
+  // Prefer Hubtel OTP API when configured (transactional OTP endpoint)
+  if (otpBase) {
+    requestList.push({
+      label: 'otp-api',
+      request: {
+        url: `${otpBase}/v1/otp/send`,
+        method: 'post',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+        },
+        data: {
+          to: normalizedPhone,
+          from: sender,
+          content,
+        },
+      },
+    });
+    // If OTP API is available prefer it; return early if apiKey present to keep auth behavior consistent
+    if (apiKey) return requestList;
+  }
 
   if (apiKey) {
     requestList.push({
@@ -184,15 +207,18 @@ const getProviderError = (err, fallback = 'SMS provider error') => {
 
 const getSmsDiagnostics = () => ({
   hubtelUrl: getHubtelUrl(),
+  hubtelOtpUrl: process.env.HUBTEL_OTP_API_URL || null,
   hasApiKey: Boolean(process.env.HUBTEL_API_KEY),
   hasClientId: Boolean(process.env.HUBTEL_SMS_CLIENT_ID),
   hasClientSecret: Boolean(process.env.HUBTEL_SMS_CLIENT_SECRET),
   hasSender: Boolean(process.env.HUBTEL_SENDER || process.env.HUBTEL_SMS_FROM),
-  transport: process.env.HUBTEL_API_KEY
-    ? 'bearer-api-key'
-    : (isProduction()
-      ? 'production-api-key-required'
-      : (process.env.HUBTEL_SMS_CLIENT_ID && process.env.HUBTEL_SMS_CLIENT_SECRET ? 'query-client-secret' : 'unconfigured')),
+  transport: process.env.HUBTEL_OTP_API_URL
+    ? 'otp-api'
+    : (process.env.HUBTEL_API_KEY
+      ? 'bearer-api-key'
+      : (isProduction()
+        ? 'production-api-key-required'
+        : (process.env.HUBTEL_SMS_CLIENT_ID && process.env.HUBTEL_SMS_CLIENT_SECRET ? 'query-client-secret' : 'unconfigured'))),
 });
 
 const getLatestCodeRecord = async (phone, purpose, dbClient = null) => {
