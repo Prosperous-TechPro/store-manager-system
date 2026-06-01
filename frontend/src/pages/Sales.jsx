@@ -6,6 +6,8 @@ import useSyncRefresh from '../hooks/useSyncRefresh'
 const Sales = () => {
   const [products, setProducts] = useState([])
   const [productQuery, setProductQuery] = useState('')
+  const [typedName, setTypedName] = useState('')
+  const [typedQuantity, setTypedQuantity] = useState(1)
   const [cart, setCart] = useState([])
   const [receipt, setReceipt] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -70,13 +72,23 @@ const Sales = () => {
 
   const cartTotal = cart.reduce((sum, item) => sum + (Number.parseFloat(item.unitPrice || 0) * Number.parseInt(item.quantity || 0, 10)), 0)
 
-  const addToCart = (product) => {
+  const addToCart = (product, quantityToAdd = 1) => {
+    const safeQty = Number.parseInt(quantityToAdd, 10)
+    const qty = Number.isFinite(safeQty) && safeQty > 0 ? safeQty : 1
+    const stock = Number.parseInt(product.quantity || 0, 10)
+    if (stock <= 0) {
+      setError(`${product.name} is out of stock.`)
+      return
+    }
+
+    setError('')
     setCart((current) => {
       const existing = current.find((item) => item.productId === product.id)
       if (existing) {
+        const nextQty = existing.quantity + qty
         return current.map((item) => (
           item.productId === product.id
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: nextQty > stock ? stock : nextQty }
             : item
         ))
       }
@@ -86,20 +98,48 @@ const Sales = () => {
         {
           productId: product.id,
           productName: product.name,
-          quantity: 1,
+          quantity: qty > stock ? stock : qty,
           unitPrice: Number.parseFloat(product.selling_price || 0),
-          stock: Number.parseInt(product.quantity || 0, 10),
+          stock,
         },
       ]
     })
     setProductQuery('')
   }
 
+  const addTypedProduct = () => {
+    const name = typedName.trim().toLowerCase()
+    const qty = Number.parseInt(typedQuantity, 10)
+    if (!name) {
+      setError('Type the product name.')
+      return
+    }
+    if (!Number.isFinite(qty) || qty <= 0) {
+      setError('Quantity must be at least 1.')
+      return
+    }
+
+    const product = products.find((item) => String(item.name || '').trim().toLowerCase() === name)
+    if (!product) {
+      setError('Product not found in system. Use an existing product name.')
+      return
+    }
+
+    addToCart(product, qty)
+    setTypedName('')
+    setTypedQuantity(1)
+  }
+
   const updateCartItem = (productId, nextQuantity) => {
     const parsedQuantity = Number.parseInt(nextQuantity, 10)
     setCart((current) => current.map((item) => (
       item.productId === productId
-        ? { ...item, quantity: Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1 }
+        ? {
+          ...item,
+          quantity: Number.isFinite(parsedQuantity) && parsedQuantity > 0
+            ? (parsedQuantity > item.stock ? item.stock : parsedQuantity)
+            : 1,
+        }
         : item
     )))
   }
@@ -117,6 +157,7 @@ const Sales = () => {
     const receiptDate = currentReceipt.date ? new Date(currentReceipt.date).toLocaleString() : new Date().toLocaleString()
     const rows = currentReceipt.items.map((item) => `
       <tr>
+        <td>${receiptDate}</td>
         <td>${item.product_name}</td>
         <td style="text-align:right;">${item.quantity}</td>
         <td style="text-align:right;">GHS ${Number.parseFloat(item.unit_price || 0).toFixed(2)}</td>
@@ -145,10 +186,11 @@ const Sales = () => {
           <table>
             <thead>
               <tr>
-                <th>Item</th>
+                <th>Date</th>
+                <th>Name</th>
                 <th style="text-align:right;">Qty</th>
                 <th style="text-align:right;">Unit Price</th>
-                <th style="text-align:right;">Line Total</th>
+                <th style="text-align:right;">Total Price</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -166,7 +208,7 @@ const Sales = () => {
   }
 
   const submit = async (e) => {
-    e.preventDefault()
+    e?.preventDefault?.()
     setError('')
     setMessage('')
 
@@ -248,6 +290,42 @@ const Sales = () => {
             <div className="section-note">Choose only items already in stock.</div>
           </div>
 
+          <div className="form-grid" style={{ gridTemplateColumns: '2fr 1fr auto', gap: 10, alignItems: 'end' }}>
+            <div className="form-field" style={{ marginBottom: 0 }}>
+              <label>Type product name</label>
+              <input
+                list="sales-product-names"
+                value={typedName}
+                onChange={(e) => setTypedName(e.target.value)}
+                placeholder="e.g. Fresh Milk 1L"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addTypedProduct()
+                  }
+                }}
+              />
+              <datalist id="sales-product-names">
+                {products.map((product) => (
+                  <option key={product.id} value={product.name} />
+                ))}
+              </datalist>
+            </div>
+            <div className="form-field" style={{ marginBottom: 0 }}>
+              <label>Quantity</label>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={typedQuantity}
+                onChange={(e) => setTypedQuantity(e.target.value)}
+              />
+            </div>
+            <button type="button" className="button-secondary" onClick={addTypedProduct}>
+              Add by name
+            </button>
+          </div>
+
           <div className="product-picker-grid">
             {filteredProducts.length ? filteredProducts.map((product) => (
               <article key={product.id} className="data-card panel" style={{ marginBottom: 0 }}>
@@ -293,16 +371,18 @@ const Sales = () => {
                 <table>
                   <thead>
                     <tr>
-                      <th>Item</th>
+                      <th>Date</th>
+                      <th>Name</th>
                       <th>Qty</th>
                       <th>Unit price</th>
-                      <th>Line total</th>
+                      <th>Total price</th>
                       <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {cart.map((item) => (
                       <tr key={item.productId}>
+                        <td>{new Date().toLocaleDateString()}</td>
                         <td>{item.productName}</td>
                         <td>
                           <input
@@ -333,7 +413,7 @@ const Sales = () => {
             <div className={message.startsWith('Recorded GHS') ? 'success-banner success-banner--black' : 'success-banner'}>{message}</div>
           )}
           <div className="auth-actions">
-            <button type="submit" className="button-primary" disabled={saving || !cart.length}>{saving ? 'Saving...' : 'Generate receipt'}</button>
+            <button type="button" className="button-primary" onClick={submit} disabled={saving || !cart.length}>{saving ? 'Saving...' : 'Generate receipt'}</button>
             <button type="button" className="button-secondary" onClick={() => receipt && printReceipt(receipt)} disabled={!receipt}>Print last receipt</button>
           </div>
 
@@ -354,15 +434,17 @@ const Sales = () => {
                 <table>
                   <thead>
                     <tr>
-                      <th>Item</th>
+                      <th>Date</th>
+                      <th>Name</th>
                       <th>Qty</th>
                       <th>Unit price</th>
-                      <th>Line total</th>
+                      <th>Total price</th>
                     </tr>
                   </thead>
                   <tbody>
                     {receipt.items.map((item, index) => (
                       <tr key={`${item.product_name}-${index}`}>
+                        <td>{receipt.date ? new Date(receipt.date).toLocaleDateString() : new Date().toLocaleDateString()}</td>
                         <td>{item.product_name}</td>
                         <td>{item.quantity}</td>
                         <td>GHS {Number.parseFloat(item.unit_price || 0).toFixed(2)}</td>
