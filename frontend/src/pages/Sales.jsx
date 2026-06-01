@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import api from '../services/api'
 import { readSalesSnapshot } from '../services/salesSummary'
 import useSyncRefresh from '../hooks/useSyncRefresh'
@@ -15,6 +15,9 @@ const Sales = () => {
   const [error, setError] = useState('')
   const [summary, setSummary] = useState({ total_sales: 0, transactions: 0 })
   const [summaryLoaded, setSummaryLoaded] = useState(false)
+  const typedNameRef = useRef(null)
+  const receiptSectionRef = useRef(null)
+  const receiptPrintButtonRef = useRef(null)
 
   const loadProducts = useCallback(async () => {
     try {
@@ -56,6 +59,12 @@ const Sales = () => {
     loadProducts()
     loadSummary()
   }, [loadProducts, loadSummary])
+
+  useEffect(() => {
+    if (!receipt) return
+    receiptSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    receiptPrintButtonRef.current?.focus()
+  }, [receipt])
 
   useSyncRefresh(loadProducts)
   useSyncRefresh(loadSummary)
@@ -128,6 +137,8 @@ const Sales = () => {
     addToCart(product, qty)
     setTypedName('')
     setTypedQuantity(1)
+    setMessage(`Added ${product.name}. Keep adding items or generate the receipt when you are done.`)
+    requestAnimationFrame(() => typedNameRef.current?.focus())
   }
 
   const updateCartItem = (productId, nextQuantity) => {
@@ -287,13 +298,14 @@ const Sales = () => {
               onChange={(e) => setProductQuery(e.target.value)}
               placeholder="Type a product name or barcode"
             />
-            <div className="section-note">Choose only items already in stock. Keep adding as many items as needed, then click Generate receipt.</div>
+            <div className="section-note">Add as many products as the customer wants. Build the full cart first, then click Generate receipt once you are done.</div>
           </div>
 
           <div className="form-grid" style={{ gridTemplateColumns: '2fr 1fr auto', gap: 10, alignItems: 'end' }}>
             <div className="form-field" style={{ marginBottom: 0 }}>
               <label>Type product name</label>
               <input
+                ref={typedNameRef}
                 list="sales-product-names"
                 value={typedName}
                 onChange={(e) => setTypedName(e.target.value)}
@@ -322,7 +334,7 @@ const Sales = () => {
               />
             </div>
             <button type="button" className="button-secondary" onClick={addTypedProduct}>
-              Add by name
+              Add another item
             </button>
           </div>
 
@@ -422,13 +434,13 @@ const Sales = () => {
           </div>
 
           {receipt && (
-            <section className="panel" style={{ marginTop: 12 }}>
+            <section className="panel" style={{ marginTop: 12 }} ref={receiptSectionRef}>
               <div className="section-actions" style={{ marginBottom: 12 }}>
                 <div>
                   <p className="section-note" style={{ margin: 0 }}>Generated receipt</p>
                   <h2 className="approval-card-title" style={{ margin: '4px 0 0' }}>Receipt #{receipt.saleId}</h2>
                 </div>
-                <button type="button" className="button-secondary" onClick={() => printReceipt(receipt)}>Print receipt</button>
+                <button type="button" className="button-secondary" onClick={() => printReceipt(receipt)} ref={receiptPrintButtonRef}>Print receipt</button>
               </div>
 
               <div className="section-note">Date: {receipt.date ? new Date(receipt.date).toLocaleString() : new Date().toLocaleString()}</div>
