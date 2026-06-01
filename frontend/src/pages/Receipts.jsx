@@ -24,57 +24,6 @@ const Receipts = () => {
   useEffect(() => { load() }, [load])
   useSyncRefresh(load)
 
-  const printReceipt = (receipt) => {
-    const printWindow = window.open('', '_blank', 'width=420,height=640')
-    if (!printWindow) return
-
-    const receiptDate = receipt.date ? new Date(receipt.date).toLocaleString() : ''
-    const rows = (receipt.items || []).map((item) => `
-      <tr>
-        <td>${item.product_name}</td>
-        <td style="text-align:right;">${item.quantity}</td>
-        <td style="text-align:right;">GHS ${Number.parseFloat(item.price || 0).toFixed(2)}</td>
-        <td style="text-align:right;">GHS ${Number.parseFloat(item.line_total || 0).toFixed(2)}</td>
-      </tr>
-    `).join('')
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Receipt ${receipt.id}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
-            h1, p { margin: 0 0 8px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-            th, td { border-bottom: 1px solid #ddd; padding: 8px 4px; font-size: 13px; }
-            th { text-align: left; }
-            .summary { margin-top: 16px; font-weight: 700; }
-          </style>
-        </head>
-        <body>
-          <h1>Store Receipt</h1>
-          <p>Receipt #: ${receipt.id}</p>
-          <p>Date: ${receiptDate}</p>
-          <p>Cashier: ${receipt.cashier_name || 'Cashier'}</p>
-          <table>
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th style="text-align:right;">Qty</th>
-                <th style="text-align:right;">Unit Price</th>
-                <th style="text-align:right;">Line Total</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
-          <div class="summary">Total: GHS ${Number.parseFloat(receipt.total_amount || 0).toFixed(2)}</div>
-          <script>window.onload = function () { window.print(); };</script>
-        </body>
-      </html>
-    `)
-    printWindow.document.close()
-  }
-
   return (
     <div className="page">
       <section className="hero-card">
@@ -82,7 +31,7 @@ const Receipts = () => {
         <div className="page-header">
           <div>
             <h1 className="hero-title">Receipt history</h1>
-            <p className="hero-subtitle">Saved customer receipts are stored here for manager review and reprinting.</p>
+            <p className="hero-subtitle">Saved customer receipts are stored here for manager review. Printing is restricted to cashier checkout flow.</p>
           </div>
         </div>
       </section>
@@ -113,10 +62,6 @@ const Receipts = () => {
                     <span className="approval-label">Items</span>
                     <div>{receipt.items?.length || 0}</div>
                   </div>
-                </div>
-
-                <div className="approval-card-actions">
-                  <button type="button" className="button-secondary" onClick={() => printReceipt(receipt)}>Print receipt</button>
                 </div>
 
                 <div className="data-table-view" style={{ marginTop: 16 }}>

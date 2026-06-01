@@ -62,12 +62,12 @@ const Sales = () => {
 
   const filteredProducts = useMemo(() => {
     const query = productQuery.trim().toLowerCase()
-    if (!query) return products.slice(0, 12)
+    if (!query) return products.slice(0, 50)
     return products.filter((product) => [product.name, product.barcode, product.category, product.supplier_name]
       .filter(Boolean)
       .join(' ')
       .toLowerCase()
-      .includes(query)).slice(0, 12)
+      .includes(query)).slice(0, 50)
   }, [productQuery, products])
 
   const cartTotal = cart.reduce((sum, item) => sum + (Number.parseFloat(item.unitPrice || 0) * Number.parseInt(item.quantity || 0, 10)), 0)
@@ -287,7 +287,7 @@ const Sales = () => {
               onChange={(e) => setProductQuery(e.target.value)}
               placeholder="Type a product name or barcode"
             />
-            <div className="section-note">Choose only items already in stock.</div>
+            <div className="section-note">Choose only items already in stock. Keep adding as many items as needed, then click Generate receipt.</div>
           </div>
 
           <div className="form-grid" style={{ gridTemplateColumns: '2fr 1fr auto', gap: 10, alignItems: 'end' }}>
@@ -363,7 +363,10 @@ const Sales = () => {
                 <p className="section-note" style={{ margin: 0 }}>Receipt cart</p>
                 <h2 className="approval-card-title" style={{ margin: '4px 0 0' }}>Current sale</h2>
               </div>
-              <div className="nav-chip">Total GHS {cartTotal.toFixed(2)}</div>
+              <div className="section-actions">
+                <div className="nav-chip">Items {cart.length}</div>
+                <div className="nav-chip">Total GHS {cartTotal.toFixed(2)}</div>
+              </div>
             </div>
 
             {cart.length ? (
@@ -414,6 +417,7 @@ const Sales = () => {
           )}
           <div className="auth-actions">
             <button type="button" className="button-primary" onClick={submit} disabled={saving || !cart.length}>{saving ? 'Saving...' : 'Generate receipt'}</button>
+            <button type="button" className="button-secondary" onClick={() => setCart([])} disabled={saving || !cart.length}>Clear cart</button>
             <button type="button" className="button-secondary" onClick={() => receipt && printReceipt(receipt)} disabled={!receipt}>Print last receipt</button>
           </div>
 
