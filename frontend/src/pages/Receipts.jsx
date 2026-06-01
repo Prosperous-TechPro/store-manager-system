@@ -4,6 +4,7 @@ import useSyncRefresh from '../hooks/useSyncRefresh'
 
 const Receipts = () => {
   const [receipts, setReceipts] = useState([])
+  const [receiptQuery, setReceiptQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -24,6 +25,12 @@ const Receipts = () => {
   useEffect(() => { load() }, [load])
   useSyncRefresh(load)
 
+  const filteredReceipts = receipts.filter((receipt) => {
+    const query = receiptQuery.trim().toLowerCase()
+    if (!query) return true
+    return String(receipt.id || '').toLowerCase().includes(query)
+  })
+
   return (
     <div className="page">
       <section className="hero-card">
@@ -37,13 +44,24 @@ const Receipts = () => {
       </section>
 
       <section className="panel">
+        <div className="form-field" style={{ marginBottom: 16 }}>
+          <label>Search by receipt number</label>
+          <input
+            type="search"
+            value={receiptQuery}
+            onChange={(event) => setReceiptQuery(event.target.value)}
+            placeholder="Type receipt number, e.g. 42"
+          />
+          <div className="section-note">Manager and CEO can search receipts by receipt number only.</div>
+        </div>
+
         {loading ? (
           <p className="section-note">Loading receipts...</p>
         ) : error ? (
           <div className="error-banner">{error}</div>
-        ) : receipts.length ? (
+        ) : filteredReceipts.length ? (
           <div className="data-card-list">
-            {receipts.map((receipt) => (
+            {filteredReceipts.map((receipt) => (
               <article key={receipt.id} className="data-card panel">
                 <div className="data-card-head">
                   <div>
@@ -90,7 +108,9 @@ const Receipts = () => {
             ))}
           </div>
         ) : (
-          <div className="empty-state">No receipts have been generated yet.</div>
+          <div className="empty-state">
+            {receiptQuery.trim() ? 'No receipt matches that number.' : 'No receipts have been generated yet.'}
+          </div>
         )}
       </section>
     </div>
