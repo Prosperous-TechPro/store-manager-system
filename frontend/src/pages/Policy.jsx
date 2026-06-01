@@ -7,7 +7,7 @@ const policySections = [
     items: [
       'Cashier accounts are for daily sales and stock tasks.',
       'Manager accounts are reserved for supervisors who handle operations.',
-      'Sales Associate accounts handle frontline sales entry.',
+      'Shop Attendant accounts handle frontline sales entry.',
       'CEO accounts are reserved for business owners and full administration.',
       'Each user must keep their login details private.',
     ],

@@ -15,7 +15,7 @@ const sections = [
     items: [
       'Cashier accounts handle daily sales and front-desk work.',
       'Manager accounts should be limited to trusted supervisors.',
-      'Sales Associate accounts are for sales entry and customer checkout.',
+      'Shop Attendant accounts are for sales entry and customer checkout.',
       'CEO accounts should be limited to the business owner or executive lead.',
       'Review access regularly to keep the store secure.',
     ],

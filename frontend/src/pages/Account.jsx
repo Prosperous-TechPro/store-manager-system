@@ -25,7 +25,7 @@ const Account = () => {
     confirmPassword: '',
   })
 
-  const displayRole = role === 'owner' || role === 'ceo' ? 'CEO' : role || 'casher'
+  const displayRole = role === 'owner' || role === 'ceo' ? 'CEO' : role === 'saler' ? 'Shop Attendant' : role || 'casher'
 
   const load = useCallback(async () => {
     setLoading(true)

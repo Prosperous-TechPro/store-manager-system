@@ -21,7 +21,9 @@ const normalizePhone = (phone) => {
 
 const normalizeRole = (role) => {
   const value = String(role || '').trim().toLowerCase();
-  return value === 'owner' ? 'ceo' : value;
+  if (value === 'owner') return 'ceo';
+  if (value === 'shop attendant' || value === 'shop_attendant') return 'saler';
+  return value;
 };
 
 const issueAuthSession = (user) => {
