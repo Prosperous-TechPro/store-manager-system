@@ -6,28 +6,70 @@ const createSale = async (req, res) => {
   const hasItems = Array.isArray(items) && items.length > 0;
   if (!hasItems && !Number.isFinite(saleAmount)) return res.status(400).json({ error: 'Sale amount is required' });
   if (Number.isFinite(saleAmount) && saleAmount < 0) return res.status(400).json({ error: 'Sale amount must be at least 0' });
+
+  const normalizedItems = hasItems
+    ? items
+        .map((item) => ({
+          product_id: Number.parseInt(item.product_id, 10),
+          quantity: Number.parseInt(item.quantity, 10),
+          price: Number.parseFloat(item.price),
+        }))
+        .filter((item) => Number.isFinite(item.product_id) && Number.isFinite(item.quantity) && item.quantity > 0)
+    : [];
+
+  if (hasItems && !normalizedItems.length) {
+    return res.status(400).json({ error: 'Add at least one valid product' });
+  }
+
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
+    const cashierResult = await client.query('SELECT id, name FROM users WHERE id=$1', [req.user.id]);
+    const cashierName = cashierResult.rows[0]?.name || 'Cashier';
     const saleRes = await client.query('INSERT INTO sales(user_id,total_amount,date) VALUES($1,$2,NOW()) RETURNING id,date', [req.user.id, hasItems ? 0 : saleAmount]);
     const saleId = saleRes.rows[0].id;
     let total = hasItems ? 0 : saleAmount;
+    const receiptItems = [];
     if (hasItems) {
-      for (const it of items) {
-        const lineTotal = it.price * it.quantity;
+      for (const it of normalizedItems) {
+        const productResult = await client.query('SELECT id, name, quantity, selling_price FROM products WHERE id=$1 FOR UPDATE', [it.product_id]);
+        const product = productResult.rows[0];
+        if (!product) {
+          throw new Error(`Product ${it.product_id} not found`);
+        }
+
+        if (Number.parseInt(product.quantity || 0, 10) < it.quantity) {
+          throw new Error(`Insufficient stock for ${product.name}`);
+        }
+
+        const unitPrice = Number.isFinite(it.price) ? it.price : Number.parseFloat(product.selling_price || 0);
+        const lineTotal = unitPrice * it.quantity;
         total += lineTotal;
-        await client.query('INSERT INTO sale_items(sale_id,product_id,quantity,price) VALUES($1,$2,$3,$4)', [saleId, it.product_id, it.quantity, it.price]);
+        await client.query('INSERT INTO sale_items(sale_id,product_id,quantity,price) VALUES($1,$2,$3,$4)', [saleId, it.product_id, it.quantity, unitPrice]);
         await client.query('UPDATE products SET quantity = quantity - $1 WHERE id=$2', [it.quantity, it.product_id]);
         await client.query('INSERT INTO stock_movements(product_id,type,quantity,date) VALUES($1,$2,$3,NOW())', [it.product_id, 'sale', it.quantity]);
+        receiptItems.push({
+          product_id: product.id,
+          product_name: product.name,
+          quantity: it.quantity,
+          unit_price: unitPrice,
+          line_total: lineTotal,
+        });
       }
       await client.query('UPDATE sales SET total_amount=$1 WHERE id=$2', [total, saleId]);
     }
     await client.query('COMMIT');
-    res.status(201).json({ saleId, total, date: saleRes.rows[0].date });
+    res.status(201).json({
+      saleId,
+      total,
+      date: saleRes.rows[0].date,
+      cashier_name: cashierName,
+      items: hasItems ? receiptItems : [],
+    });
   } catch (err) {
     await client.query('ROLLBACK');
     console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(400).json({ error: err.message || 'Server error' });
   } finally {
     if (typeof client.release === 'function') {
       client.release();

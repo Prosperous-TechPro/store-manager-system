@@ -9,6 +9,7 @@ const Nav = ()=>{
   const canViewRequests = ['manager', 'ceo'].includes(role)
   const canViewSales = ['casher'].includes(role)
   const canViewDashboard = ['casher', 'manager', 'ceo', 'admin'].includes(role)
+  const canViewReceipts = ['manager', 'ceo', 'admin'].includes(role)
   const [alertCount, setAlertCount] = useState(0)
   const [acctOpen, setAcctOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -89,6 +90,7 @@ const Nav = ()=>{
           {canViewDashboard && <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`} onClick={closeMobile}>Dashboard</Link>}
           <Link to="/products" className={`nav-link ${location.pathname === '/products' ? 'active' : ''}`} onClick={closeMobile}>Products</Link>
           {canViewSales && <Link to="/sales" className={`nav-link ${location.pathname === '/sales' ? 'active' : ''}`} onClick={closeMobile}>Sales</Link>}
+          {canViewReceipts && <Link to="/receipts" className={`nav-link ${location.pathname === '/receipts' ? 'active' : ''}`} onClick={closeMobile}>Receipts</Link>}
           {canViewRecords && <Link to="/records" className={`nav-link ${location.pathname === '/records' ? 'active' : ''}`} onClick={closeMobile}>Users</Link>}
           {canViewRequests && <Link to="/requests" className={`nav-link ${location.pathname === '/requests' ? 'active' : ''}`} onClick={closeMobile}>Request</Link>}
           {canViewAlerts && <Link to="/alerts" className={`nav-link nav-alert-link ${location.pathname === '/alerts' ? 'active' : ''}`} onClick={closeMobile}>Alerts{alertCount > 0 && <span className="badge">{alertCount}</span>}</Link>}
@@ -145,6 +147,7 @@ const Nav = ()=>{
           {canViewDashboard && <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`} onClick={closeMobile}>Dashboard</Link>}
           <Link to="/products" className={`nav-link ${location.pathname === '/products' ? 'active' : ''}`} onClick={closeMobile}>Products</Link>
           {canViewSales && <Link to="/sales" className={`nav-link ${location.pathname === '/sales' ? 'active' : ''}`} onClick={closeMobile}>Sales</Link>}
+          {canViewReceipts && <Link to="/receipts" className={`nav-link ${location.pathname === '/receipts' ? 'active' : ''}`} onClick={closeMobile}>Receipts</Link>}
           {canViewRecords && <Link to="/records" className={`nav-link ${location.pathname === '/records' ? 'active' : ''}`} onClick={closeMobile}>Users</Link>}
           {canViewRequests && <Link to="/requests" className={`nav-link ${location.pathname === '/requests' ? 'active' : ''}`} onClick={closeMobile}>Request</Link>}
           {canViewAlerts && <Link to="/alerts" className={`nav-link nav-alert-link ${location.pathname === '/alerts' ? 'active' : ''}`} onClick={closeMobile}>Alerts{alertCount > 0 && <span className="badge">{alertCount}</span>}</Link>}

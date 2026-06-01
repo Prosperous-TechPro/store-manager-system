@@ -1,23 +1,37 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import api from '../services/api'
 import { readSalesSnapshot } from '../services/salesSummary'
+import useSyncRefresh from '../hooks/useSyncRefresh'
 
 const Sales = () => {
-  const [amount, setAmount] = useState('')
+  const [products, setProducts] = useState([])
+  const [productQuery, setProductQuery] = useState('')
+  const [cart, setCart] = useState([])
+  const [receipt, setReceipt] = useState(null)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [summary, setSummary] = useState({ total_sales: 0, transactions: 0 })
   const [summaryLoaded, setSummaryLoaded] = useState(false)
 
-  const readSalesSummary = useCallback(async () => {
+  const loadProducts = useCallback(async () => {
+    try {
+      const data = await api.get('/products')
+      setProducts(Array.isArray(data) ? data : [])
+    } catch (loadError) {
+      console.error(loadError)
+      setProducts([])
+    }
+  }, [])
+
+  const readSummary = useCallback(async () => {
     return readSalesSnapshot()
   }, [])
 
   const loadSummary = useCallback(async () => {
     setSummaryLoaded(false)
     try {
-      const nextSummary = await readSalesSummary()
+      const nextSummary = await readSummary()
       setSummary({
         total_sales: nextSummary.total_sales,
         transactions: nextSummary.transactions,
@@ -28,7 +42,7 @@ const Sales = () => {
     } finally {
       setSummaryLoaded(true)
     }
-  }, [readSalesSummary])
+  }, [readSummary])
 
   const broadcastSync = () => {
     const stamp = String(Date.now())
@@ -37,26 +51,159 @@ const Sales = () => {
   }
 
   useEffect(() => {
+    loadProducts()
     loadSummary()
-  }, [loadSummary])
+  }, [loadProducts, loadSummary])
+
+  useSyncRefresh(loadProducts)
+  useSyncRefresh(loadSummary)
+
+  const filteredProducts = useMemo(() => {
+    const query = productQuery.trim().toLowerCase()
+    if (!query) return products.slice(0, 12)
+    return products.filter((product) => [product.name, product.barcode, product.category, product.supplier_name]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+      .includes(query)).slice(0, 12)
+  }, [productQuery, products])
+
+  const cartTotal = cart.reduce((sum, item) => sum + (Number.parseFloat(item.unitPrice || 0) * Number.parseInt(item.quantity || 0, 10)), 0)
+
+  const addToCart = (product) => {
+    setCart((current) => {
+      const existing = current.find((item) => item.productId === product.id)
+      if (existing) {
+        return current.map((item) => (
+          item.productId === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        ))
+      }
+
+      return [
+        ...current,
+        {
+          productId: product.id,
+          productName: product.name,
+          quantity: 1,
+          unitPrice: Number.parseFloat(product.selling_price || 0),
+          stock: Number.parseInt(product.quantity || 0, 10),
+        },
+      ]
+    })
+    setProductQuery('')
+  }
+
+  const updateCartItem = (productId, nextQuantity) => {
+    const parsedQuantity = Number.parseInt(nextQuantity, 10)
+    setCart((current) => current.map((item) => (
+      item.productId === productId
+        ? { ...item, quantity: Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 1 }
+        : item
+    )))
+  }
+
+  const removeCartItem = (productId) => {
+    setCart((current) => current.filter((item) => item.productId !== productId))
+  }
+
+  const printReceipt = (currentReceipt) => {
+    if (!currentReceipt) return
+
+    const printWindow = window.open('', '_blank', 'width=420,height=640')
+    if (!printWindow) return
+
+    const receiptDate = currentReceipt.date ? new Date(currentReceipt.date).toLocaleString() : new Date().toLocaleString()
+    const rows = currentReceipt.items.map((item) => `
+      <tr>
+        <td>${item.product_name}</td>
+        <td style="text-align:right;">${item.quantity}</td>
+        <td style="text-align:right;">GHS ${Number.parseFloat(item.unit_price || 0).toFixed(2)}</td>
+        <td style="text-align:right;">GHS ${Number.parseFloat(item.line_total || 0).toFixed(2)}</td>
+      </tr>
+    `).join('')
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Receipt ${currentReceipt.saleId}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
+            h1, h2, p { margin: 0 0 8px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+            th, td { border-bottom: 1px solid #ddd; padding: 8px 4px; font-size: 13px; }
+            th { text-align: left; }
+            .summary { margin-top: 16px; font-weight: 700; }
+          </style>
+        </head>
+        <body>
+          <h1>Store Receipt</h1>
+          <p>Receipt #: ${currentReceipt.saleId}</p>
+          <p>Date: ${receiptDate}</p>
+          <p>Cashier: ${currentReceipt.cashier_name || 'Cashier'}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th style="text-align:right;">Qty</th>
+                <th style="text-align:right;">Unit Price</th>
+                <th style="text-align:right;">Line Total</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <div class="summary">Total: GHS ${Number.parseFloat(currentReceipt.total || 0).toFixed(2)}</div>
+          <script>
+            window.onload = function () {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `)
+    printWindow.document.close()
+  }
 
   const submit = async (e) => {
     e.preventDefault()
     setError('')
     setMessage('')
 
-    const saleAmount = Number.parseFloat(amount)
-    if (!Number.isFinite(saleAmount) || saleAmount < 0) {
-      setError('Enter a valid sales amount')
+    if (!cart.length) {
+      setError('Add at least one product from the system')
       return
     }
 
+    const items = cart.map((item) => ({
+      product_id: item.productId,
+      quantity: item.quantity,
+      price: item.unitPrice,
+    }))
+
     setSaving(true)
     try {
-      await api.post('/sales', { amount: saleAmount })
-      setMessage(`Recorded GHS ${saleAmount.toFixed(2)} in sales.`)
-      setAmount('')
+      const result = await api.post('/sales', { items })
+      const nextReceipt = {
+        saleId: result.saleId,
+        total: Number.parseFloat(result.total || cartTotal),
+        date: result.date,
+        cashier_name: result.cashier_name || JSON.parse(localStorage.getItem('user') || 'null')?.name || 'Cashier',
+        items: Array.isArray(result.items) && result.items.length
+          ? result.items
+          : cart.map((item) => ({
+            product_name: item.productName,
+            quantity: item.quantity,
+            unit_price: item.unitPrice,
+            line_total: Number.parseFloat(item.unitPrice || 0) * Number.parseInt(item.quantity || 0, 10),
+          })),
+      }
+      setReceipt(nextReceipt)
+      setMessage(`Receipt #${result.saleId} recorded successfully.`)
+      setCart([])
+      setProductQuery('')
       await loadSummary()
+      await loadProducts()
       broadcastSync()
     } catch (err) {
       setError(err.message || 'Failed to record sales')
@@ -88,20 +235,150 @@ const Sales = () => {
         </div>
       </section>
 
-      <section className="panel" style={{ maxWidth: 640 }}>
-        <form onSubmit={submit} className="form-grid">
+      <section className="panel" style={{ maxWidth: 960 }}>
+        <div className="form-grid">
           <div className="form-field">
-            <label>Sales amount (GHS)</label>
-            <input type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
+            <label>Search product in system</label>
+            <input
+              type="search"
+              value={productQuery}
+              onChange={(e) => setProductQuery(e.target.value)}
+              placeholder="Type a product name or barcode"
+            />
+            <div className="section-note">Choose only items already in stock.</div>
           </div>
+
+          <div className="product-picker-grid">
+            {filteredProducts.length ? filteredProducts.map((product) => (
+              <article key={product.id} className="data-card panel" style={{ marginBottom: 0 }}>
+                <div className="data-card-head">
+                  <div>
+                    <h2 className="approval-card-title">{product.name}</h2>
+                    <p className="section-note">{product.barcode || 'No barcode'} | {product.category || 'Uncategorized'}</p>
+                  </div>
+                  <span className="tag tag-success">{Number.parseFloat(product.selling_price || 0).toFixed(2)}</span>
+                </div>
+                <div className="approval-card-body">
+                  <div>
+                    <span className="approval-label">Available</span>
+                    <div>{product.quantity ?? 0}</div>
+                  </div>
+                  <div>
+                    <span className="approval-label">Supplier</span>
+                    <div>{product.supplier_name || '-'}</div>
+                  </div>
+                </div>
+                <div className="approval-card-actions">
+                  <button type="button" className="button-secondary" onClick={() => addToCart(product)} disabled={Number.parseInt(product.quantity || 0, 10) <= 0}>
+                    Add to receipt
+                  </button>
+                </div>
+              </article>
+            )) : (
+              <div className="empty-state">No matching product found in the system.</div>
+            )}
+          </div>
+
+          <div className="table-card" style={{ marginTop: 12 }}>
+            <div className="section-actions" style={{ marginBottom: 16 }}>
+              <div>
+                <p className="section-note" style={{ margin: 0 }}>Receipt cart</p>
+                <h2 className="approval-card-title" style={{ margin: '4px 0 0' }}>Current sale</h2>
+              </div>
+              <div className="nav-chip">Total GHS {cartTotal.toFixed(2)}</div>
+            </div>
+
+            {cart.length ? (
+              <div className="data-table-view">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th>Qty</th>
+                      <th>Unit price</th>
+                      <th>Line total</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cart.map((item) => (
+                      <tr key={item.productId}>
+                        <td>{item.productName}</td>
+                        <td>
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(event) => updateCartItem(item.productId, event.target.value)}
+                            style={{ width: 90 }}
+                          />
+                        </td>
+                        <td>GHS {Number.parseFloat(item.unitPrice || 0).toFixed(2)}</td>
+                        <td>GHS {(Number.parseFloat(item.unitPrice || 0) * Number.parseInt(item.quantity || 0, 10)).toFixed(2)}</td>
+                        <td>
+                          <button type="button" className="button-secondary" onClick={() => removeCartItem(item.productId)}>Remove</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="empty-state">No products added to the receipt yet.</div>
+            )}
+          </div>
+
           {error && <div className="error-banner">{error}</div>}
           {message && (
             <div className={message.startsWith('Recorded GHS') ? 'success-banner success-banner--black' : 'success-banner'}>{message}</div>
           )}
           <div className="auth-actions">
-            <button type="submit" className="button-primary" disabled={saving}>{saving ? 'Saving...' : 'Save sales amount'}</button>
+            <button type="submit" className="button-primary" disabled={saving || !cart.length}>{saving ? 'Saving...' : 'Generate receipt'}</button>
+            <button type="button" className="button-secondary" onClick={() => receipt && printReceipt(receipt)} disabled={!receipt}>Print last receipt</button>
           </div>
-        </form>
+
+          {receipt && (
+            <section className="panel" style={{ marginTop: 12 }}>
+              <div className="section-actions" style={{ marginBottom: 12 }}>
+                <div>
+                  <p className="section-note" style={{ margin: 0 }}>Generated receipt</p>
+                  <h2 className="approval-card-title" style={{ margin: '4px 0 0' }}>Receipt #{receipt.saleId}</h2>
+                </div>
+                <button type="button" className="button-secondary" onClick={() => printReceipt(receipt)}>Print receipt</button>
+              </div>
+
+              <div className="section-note">Date: {receipt.date ? new Date(receipt.date).toLocaleString() : new Date().toLocaleString()}</div>
+              <div className="section-note">Cashier: {receipt.cashier_name || 'Cashier'}</div>
+
+              <div className="data-table-view" style={{ marginTop: 16 }}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Item</th>
+                      <th>Qty</th>
+                      <th>Unit price</th>
+                      <th>Line total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {receipt.items.map((item, index) => (
+                      <tr key={`${item.product_name}-${index}`}>
+                        <td>{item.product_name}</td>
+                        <td>{item.quantity}</td>
+                        <td>GHS {Number.parseFloat(item.unit_price || 0).toFixed(2)}</td>
+                        <td>GHS {Number.parseFloat(item.line_total || 0).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="nav-chip" style={{ marginTop: 12, display: 'inline-flex' }}>
+                Total GHS {Number.parseFloat(receipt.total || 0).toFixed(2)}
+              </div>
+            </section>
+          )}
+        </div>
       </section>
     </div>
   )

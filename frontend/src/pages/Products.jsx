@@ -68,6 +68,11 @@ const Products = () => {
     return haystack.includes(searchQuery.toLowerCase())
   })
 
+  const isExpired = (expiryDate) => {
+    if (!expiryDate) return false
+    return new Date(expiryDate).getTime() <= new Date().setHours(23, 59, 59, 999)
+  }
+
   return (
     <div className="page landing-page">
       <section className="hero-card landing-hero">
@@ -119,7 +124,7 @@ const Products = () => {
                     <td>
                       <div className="table-actions">
                         {canManageProducts && <button className="button-secondary" onClick={()=>onEdit(p)}>Edit</button>}
-                        {canDeleteProducts && <button className="button-danger" onClick={()=>onDelete(p.id)}>Delete</button>}
+                        {canDeleteProducts && isExpired(p.expiry_date) && <button className="button-danger" onClick={()=>onDelete(p.id)}>Delete expired</button>}
                       </div>
                     </td>
                   </tr>
@@ -153,7 +158,7 @@ const Products = () => {
                   <div className="approval-card-actions">
                     <div className="table-actions">
                       {canManageProducts && <button className="button-secondary" onClick={()=>onEdit(p)}>Edit</button>}
-                      {canDeleteProducts && <button className="button-danger" onClick={()=>onDelete(p.id)}>Delete</button>}
+                      {canDeleteProducts && isExpired(p.expiry_date) && <button className="button-danger" onClick={()=>onDelete(p.id)}>Delete expired</button>}
                     </div>
                   </div>
                 </article>

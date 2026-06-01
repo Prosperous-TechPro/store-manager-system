@@ -21,4 +21,15 @@ describe('productController.unit', ()=>{
     await products.listProducts(req, res)
     expect(res._body).toBe(rows)
   })
+
+  test('deleteProduct rejects non-expired products', async ()=>{
+    db.query.mockResolvedValueOnce({ rows: [{ id: 1, expiry_date: '2026-12-31' }] })
+
+    const req = { params: { id: '1' }, user: { role: 'manager' } }
+    const res = makeRes()
+    await products.deleteProduct(req, res)
+
+    expect(res._status).toBe(400)
+    expect(res._body).toEqual({ error: 'Only expired products can be deleted' })
+  })
 })

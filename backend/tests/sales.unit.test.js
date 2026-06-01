@@ -17,8 +17,10 @@ describe('salesController.unit', ()=>{
     const mockClient = {
       query: jest.fn()
     }
-    // sequence: BEGIN, INSERT INTO sales RETURNING id,date, then inserts, updates, stock_movements, then UPDATE sales
+    // sequence: BEGIN, user lookup, INSERT INTO sales RETURNING id,date, product lookup, inserts, updates, stock_movements, then UPDATE sales
     mockClient.query.mockImplementation(async (text, params)=>{
+      if (text.startsWith('SELECT id, name FROM users')) return { rows:[{ id: 7, name: 'Sam' }] }
+      if (text.startsWith('SELECT id, name, quantity, selling_price FROM products')) return { rows:[{ id: 1, name: 'Soap', quantity: 10, selling_price: 5.0 }] }
       if (text.startsWith('INSERT INTO sales')) return { rows:[{ id: 55, date: new Date().toISOString() }] }
       return { rows: [] }
     })
@@ -30,11 +32,15 @@ describe('salesController.unit', ()=>{
     expect(res._status).toBe(201)
     expect(res._body).toHaveProperty('saleId')
     expect(res._body).toHaveProperty('total')
+    expect(res._body).toHaveProperty('cashier_name', 'Sam')
+    expect(res._body.items).toHaveLength(1)
+    expect(res._body.items[0]).toMatchObject({ product_name: 'Soap', quantity: 2, unit_price: 5, line_total: 10 })
   })
 
   test('createSale allows amount-only sale for cashiers', async ()=>{
     const mockClient = { query: jest.fn() }
     mockClient.query.mockImplementation(async (text, params)=>{
+      if (text.startsWith('SELECT id, name FROM users')) return { rows:[{ id: 9, name: 'Cashier One' }] }
       if (text.startsWith('INSERT INTO sales')) return { rows:[{ id: 77, date: new Date().toISOString() }] }
       return { rows: [] }
     })
@@ -46,6 +52,7 @@ describe('salesController.unit', ()=>{
     expect(res._status).toBe(201)
     expect(res._body.saleId).toBe(77)
     expect(res._body.total).toBe(123.45)
+    expect(res._body.items).toEqual([])
   })
 
   test('listSalesDetails groups sale items under each sale', async ()=>{
