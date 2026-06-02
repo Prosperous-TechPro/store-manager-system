@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 
 const sms = require('./smsController');
 
-const ALLOWED_ROLES = new Set(['casher', 'manager', 'saler', 'ceo', 'admin']);
+const ALLOWED_ROLES = new Set(['cashier', 'manager', 'salesperson', 'ceo', 'admin']);
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GH_PHONE_REGEX = /^(?:\+233|0)\d{9}$/;
 const PASSWORD_REGEX = /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/; // at least one lowercase, one uppercase, one digit
@@ -22,7 +22,8 @@ const normalizePhone = (phone) => {
 const normalizeRole = (role) => {
   const value = String(role || '').trim().toLowerCase();
   if (value === 'owner') return 'ceo';
-  if (value === 'shop attendant' || value === 'shop_attendant') return 'saler';
+  if (value === 'shop attendant' || value === 'shop_attendant' || value === 'saler') return 'salesperson';
+  if (value === 'casher') return 'cashier';
   return value;
 };
 
@@ -62,11 +63,11 @@ const countActiveManagers = async (excludeUserId = null) => {
 };
 
 const register = async (req, res) => {
-  const { name, email, password, role = 'casher', phone } = req.body;
+  const { name, email, password, role = 'cashier', phone } = req.body;
   if (!name || !email || !password || !phone) return res.status(400).json({ error: 'Name, email, password, and phone are required' });
   if (String(password).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters long' });
   if (!PASSWORD_REGEX.test(String(password))) return res.status(400).json({ error: 'Password must include uppercase, lowercase, and a number' });
-  const normalizedRole = normalizeRole(role || 'casher');
+  const normalizedRole = normalizeRole(role || 'cashier');
   const normalizedEmail = normalizeEmail(email);
   const normalizedPhone = normalizePhone(phone);
   if (!ALLOWED_ROLES.has(normalizedRole)) {

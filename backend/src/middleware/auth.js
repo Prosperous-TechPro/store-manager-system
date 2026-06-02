@@ -14,8 +14,8 @@ const authenticate = async (req, res, next) => {
     if (!user || user.deleted_at) return res.status(401).json({ error: 'Account is no longer active' });
     if (!user.approved) return res.status(401).json({ error: 'Account is waiting for manager or CEO approval' });
 
-    const rawRole = String(user.role || '').trim().toLowerCase();
-    const normalizedRole = rawRole === 'owner' ? 'ceo' : (rawRole === 'cashier' ? 'casher' : rawRole);
+        const rawRole = String(user.role || '').trim().toLowerCase();
+    const normalizedRole = rawRole === 'owner' ? 'ceo' : (rawRole === 'casher' ? 'cashier' : (rawRole === 'saler' ? 'salesperson' : rawRole));
 
     req.user = { id: user.id, role: normalizedRole };
     next();
