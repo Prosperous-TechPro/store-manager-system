@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
 import useSyncRefresh from '../hooks/useSyncRefresh'
+import { displayRole as formatRole } from '../utils/roles'
 
 const Account = () => {
   const [role, setRole] = useState('')
@@ -25,7 +26,7 @@ const Account = () => {
     confirmPassword: '',
   })
 
-  const displayRole = role === 'owner' || role === 'ceo' ? 'CEO' : role === 'saler' ? 'Shop Attendant' : role || 'casher'
+  const displayRole = formatRole(role)
 
   const load = useCallback(async () => {
     setLoading(true)

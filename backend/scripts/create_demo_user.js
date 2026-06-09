@@ -9,7 +9,7 @@ const jwt = require('jsonwebtoken');
     const email = process.env.DEMO_EMAIL || 'autouser+cashier@example.com';
     const phone = process.env.DEMO_PHONE || '0249999001';
     const password = process.env.DEMO_PASSWORD || 'Password123!';
-    const role = 'casher';
+    const role = 'cashier';
 
     console.log('Using DB connection from env. Creating/updating demo user...');
 

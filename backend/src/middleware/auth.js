@@ -12,9 +12,9 @@ const authenticate = async (req, res, next) => {
     const result = await db.query('SELECT id, role, approved, deleted_at FROM users WHERE id=$1', [payload.id]);
     const user = result.rows[0];
     if (!user || user.deleted_at) return res.status(401).json({ error: 'Account is no longer active' });
-    if (!user.approved) return res.status(401).json({ error: 'Account is waiting for manager or CEO approval' });
+    if (!user.approved) return res.status(401).json({ error: 'Account is waiting for approval' });
 
-        const rawRole = String(user.role || '').trim().toLowerCase();
+    const rawRole = String(user.role || '').trim().toLowerCase();
     const normalizedRole = rawRole === 'owner' ? 'ceo' : (rawRole === 'casher' ? 'cashier' : (rawRole === 'saler' ? 'salesperson' : rawRole));
 
     req.user = { id: user.id, role: normalizedRole };
@@ -24,10 +24,9 @@ const authenticate = async (req, res, next) => {
   }
 };
 
+// All authenticated users have access to all endpoints - no role restrictions
 const authorize = (roles = []) => (req, res, next) => {
-  if (!roles.length) return next();
   if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
-  if (!roles.includes(req.user.role)) return res.status(403).json({ error: 'Forbidden' });
   next();
 };
 

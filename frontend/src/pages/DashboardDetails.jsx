@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import api from '../services/api'
 import { readSalesSnapshot } from '../services/salesSummary'
 import useSyncRefresh from '../hooks/useSyncRefresh'
@@ -24,13 +24,6 @@ const metricEmptyMessages = {
 
 const DashboardDetails = () => {
   const { metricId } = useParams()
-  const user = JSON.parse(localStorage.getItem('user') || 'null')
-  const role = user?.role === 'owner' ? 'ceo' : user?.role
-  const isManager = role === 'manager'
-  const canViewDashboard = ['manager', 'ceo', 'admin'].includes(role)
-  const canViewSalesTotal = ['casher', 'manager', 'ceo'].includes(role)
-  const hasAccess = metricId === 'sales-total' ? canViewSalesTotal : canViewDashboard
-  const backTarget = metricId === 'sales-total' && !canViewDashboard ? '/sales' : '/dashboard'
   const [loading, setLoading] = useState(true)
   const [resetting, setResetting] = useState(false)
   const [summary, setSummary] = useState('')
@@ -38,10 +31,6 @@ const DashboardDetails = () => {
   const [error, setError] = useState('')
 
   const load = useCallback(async () => {
-    if (!hasAccess) {
-      return
-    }
-
     setLoading(true)
     setError('')
 
@@ -59,7 +48,9 @@ const DashboardDetails = () => {
         const salesList = salesResult.status === 'fulfilled' && Array.isArray(salesResult.value) ? salesResult.value : Array.isArray(summaryData.sales) ? summaryData.sales : []
         setItems(salesList.map((sale) => ({
           key: sale.id,
-          label: sale.date ? new Date(sale.date).toLocaleString() : `Sale #${sale.id}`,
+          label: sale.date
+            ? `${new Date(sale.date).toLocaleString()} · ${sale.customer_name || 'Valued Customer'}`
+            : `Sale #${sale.id} · ${sale.customer_name || 'Valued Customer'}`,
           meta: `Cashier: ${sale.cashier_name || '-'} | Total amount: ${Number.parseFloat(sale.total_amount || 0).toFixed(2)}`,
         })))
         return
@@ -130,7 +121,7 @@ const DashboardDetails = () => {
     } finally {
       setLoading(false)
     }
-  }, [hasAccess, metricId])
+  }, [metricId])
 
   useEffect(() => { load() }, [load])
   useSyncRefresh(load)
@@ -139,7 +130,6 @@ const DashboardDetails = () => {
   const emptyMessage = metricEmptyMessages[metricId]
 
   const resetSalesTotal = async () => {
-    if (!isManager) return
     if (!window.confirm('Reset total sales to zero? This will clear sales records.')) return
 
     setResetting(true)
@@ -155,10 +145,6 @@ const DashboardDetails = () => {
     }
   }
 
-  if (!hasAccess) {
-    return <Navigate to={canViewSalesTotal ? '/sales' : '/products'} replace />
-  }
-
   return (
     <div className="page">
       <section className="hero-card">
@@ -169,12 +155,12 @@ const DashboardDetails = () => {
             <p className="hero-subtitle">A focused breakdown of the metric you selected from the dashboard.</p>
           </div>
           <div className="hero-actions">
-            {metricId === 'sales-total' && isManager && (
+            {metricId === 'sales-total' && (
               <button className="button-secondary" type="button" onClick={resetSalesTotal} disabled={resetting}>
                 {resetting ? 'Resetting...' : 'Reset sales total'}
               </button>
             )}
-            <Link className="nav-chip nav-chip-link" to={backTarget}>{backTarget === '/sales' ? 'Back to sales' : 'Back to dashboard'}</Link>
+            <Link className="nav-chip nav-chip-link" to="/dashboard">Back to dashboard</Link>
           </div>
         </div>
       </section>
@@ -186,13 +172,13 @@ const DashboardDetails = () => {
           <p className="section-note">{error}</p>
         ) : (
           <>
-            <p className="section-note" style={{ marginTop: 0 }}>{summary}</p>
+            <div className="sales-summary">{summary}</div>
             {items.length ? (
-              <ul className="policy-list">
+              <ul className="sales-transaction-list">
                 {items.map((item) => (
-                  <li key={item.key}>
+                  <li key={item.key} className="sales-transaction-item">
                     <strong>{item.label}</strong>
-                    <div className="section-note">{item.meta}</div>
+                    <div className="sales-transaction-meta">{item.meta}</div>
                   </li>
                 ))}
               </ul>

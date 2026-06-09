@@ -11,7 +11,7 @@ const Login = () => {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [phone, setPhone] = useState('')
-  const [role, setRole] = useState('casher')
+  const [role, setRole] = useState('cashier')
   const [policyAccepted, setPolicyAccepted] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
@@ -58,10 +58,21 @@ const Login = () => {
         return
       }
       if (mode === 'login' && err.status === 403 && err.data?.approval_required) {
-        setError('Your account is waiting for manager or CEO approval before you can sign in.')
+        setError('Your account is waiting for approval before you can sign in.')
         return
       }
-      setError(err.message || (mode === 'login' ? 'Login failed' : 'Account creation failed'))
+
+      // Provide clearer error messages for network/server failures
+      const serverMsg = err?.data?.error || err?.message || ''
+      if (err?.status && err.status >= 500) {
+        setError(`Server error (${err.status}) — ${serverMsg || 'Please try again later'}`)
+      } else if (serverMsg && serverMsg !== 'Request failed') {
+        setError(serverMsg)
+      } else if (err?.message === 'Request failed') {
+        setError('Unable to reach the API — ensure the backend is running on port 4000 (or set VITE_API_URL).')
+      } else {
+        setError(mode === 'login' ? 'Login failed' : 'Account creation failed')
+      }
     } finally {
       setLoading(false)
     }
@@ -121,18 +132,18 @@ const Login = () => {
               </div>
               <div className="form-field">
                 <label>Phone number <span className="helper-text">Required for SMS verification</span></label>
-                <input type="tel" value={phone} onChange={(e)=>setPhone(e.target.value)} disabled={loading} placeholder="e.g. 0241234567 or +233241234567" />
+                <input type="tel" value={phone} onChange={(e)=>setPhone(e.target.value)} disabled={loading} placeholder="0240000000" />
               </div>
               <div className="form-field">
                 <label>Role</label>
                 <select className="role-select" value={role} onChange={(e)=>setRole(e.target.value)} disabled={loading}>
-                  <option value="casher">Cashier</option>
+                  <option value="cashier">Cashier</option>
                   <option value="manager">Manager</option>
                   <option value="admin">Admin</option>
-                  <option value="saler">Shop Attendant</option>
+                  <option value="salesperson">Shop Attendant</option>
                   <option value="ceo">CEO</option>
                 </select>
-                <div className="helper-text">Choose the role that matches the user’s job function and access level. Manager accounts require CEO approval. CEO accounts are limited to 3.</div>
+                <div className="helper-text">Choose the role that matches the user’s job function and access level.</div>
               </div>
             </>
           )}
@@ -151,7 +162,7 @@ const Login = () => {
                 setError(null)
                 setSuccess(null)
                 setMode(mode === 'login' ? 'register' : 'login')
-                if (mode === 'login') setRole('casher')
+                if (mode === 'login') setRole('cashier')
                 if (mode === 'login') setPolicyAccepted(false)
               }}
               disabled={loading}

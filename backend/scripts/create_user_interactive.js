@@ -34,7 +34,9 @@ const question = (q, hidden = false) => new Promise((resolve) => {
 
 const normalizeRoleInput = (value) => {
   const role = String(value || '').trim().toLowerCase();
-  if (role === 'shop attendant' || role === 'shop_attendant') return 'saler';
+  if (role === 'casher') return 'cashier';
+  if (['shop attendant', 'shop_attendant', 'saler'].includes(role)) return 'salesperson';
+  if (role === 'owner') return 'ceo';
   return role;
 };
 
@@ -43,9 +45,9 @@ const normalizeRoleInput = (value) => {
     console.log('Interactive user creation script');
     const name = (await question('Full name: ')).trim();
     const email = (await question('Email: ')).trim();
-    const phone = (await question('Phone (e.g. 0241234567 or +233241234567): ')).trim();
+    const phone = (await question('Phone (Active number): ')).trim();
     const password = (await question('Password (will be hidden): ', true)).trim();
-    const role = normalizeRoleInput(await question('Role (casher/manager/ceo/shop attendant/admin) [casher]: ')) || 'casher';
+    const role = normalizeRoleInput(await question('Role (cashier/manager/ceo/shop attendant/admin) [cashier]: ')) || 'cashier';
 
     if (!name || !email || !phone || !password) {
       console.error('All fields are required. Aborting.');

@@ -11,6 +11,7 @@ import AlertsDetails from './pages/AlertsDetails'
 import Sales from './pages/Sales'
 import Records from './pages/Records'
 import Alerts from './pages/Alerts'
+import ReceiptPreview from './components/ReceiptPreview'
 import Approvals from './pages/Approvals'
 import Products from './pages/Products'
 import Receipts from './pages/Receipts'
@@ -23,17 +24,9 @@ import Nav from './components/Nav'
 import Footer from './components/Footer'
 
 const App = () => {
-  // sidebar removed — keep layout simple with topbar navigation
+  // All authenticated users have access to all features
   const [sidebarOpen] = useState(false)
   const token = localStorage.getItem('token')
-  const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
-  const currentRole = currentUser?.role === 'owner' ? 'ceo' : currentUser?.role
-  const canViewDashboard = ['casher', 'manager', 'ceo', 'admin'].includes(currentRole)
-  const canViewManagement = ['manager', 'ceo', 'admin'].includes(currentRole)
-  const canViewAlerts = ['manager', 'ceo', 'admin'].includes(currentRole)
-  const canViewRequests = ['manager', 'ceo'].includes(currentRole)
-  const canViewSales = ['casher'].includes(currentRole)
-  const canViewReceipts = ['manager', 'ceo', 'admin'].includes(currentRole)
   const location = useLocation()
 
   useEffect(() => {
@@ -60,20 +53,21 @@ const App = () => {
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
         <Route path="/cookie-policy" element={<CookiePolicy />} />
-        <Route path="/dashboard" element={token ? (canViewDashboard ? <Dashboard /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
+        <Route path="/dashboard" element={token ? <Dashboard /> : <Navigate to="/login" />} />
         <Route path="/dashboard/:metricId" element={token ? <DashboardDetails /> : <Navigate to="/login" />} />
-        <Route path="/alerts" element={token ? (canViewAlerts ? <Alerts /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
-        <Route path="/alerts/:metricId" element={token ? (canViewAlerts ? <AlertsDetails /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
-        <Route path="/requests" element={token ? (canViewRequests ? <Approvals /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
+        <Route path="/alerts" element={token ? <Alerts /> : <Navigate to="/login" />} />
+        <Route path="/alerts/:metricId" element={token ? <AlertsDetails /> : <Navigate to="/login" />} />
+        <Route path="/requests" element={token ? <Approvals /> : <Navigate to="/login" />} />
         <Route path="/approvals" element={<Navigate to="/requests" replace />} />
         <Route path="/products" element={token ? <Products /> : <Navigate to="/login" />} />
-        <Route path="/sales" element={token ? (canViewSales ? <Sales /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
-        <Route path="/receipts" element={token ? (canViewReceipts ? <Receipts /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
-        <Route path="/records" element={token ? (canViewManagement ? <Records /> : <Navigate to="/products" replace />) : <Navigate to="/login" />} />
+        <Route path="/receipt/:id" element={token ? <ReceiptPreview /> : <Navigate to="/login" />} />
+        <Route path="/sales" element={token ? <Sales /> : <Navigate to="/login" />} />
+        <Route path="/receipts" element={token ? <Receipts /> : <Navigate to="/login" />} />
+        <Route path="/records" element={token ? <Records /> : <Navigate to="/login" />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       </main>
-      <Footer />
+      {location.pathname === '/' && <Footer />}
     </div>
   )
 }

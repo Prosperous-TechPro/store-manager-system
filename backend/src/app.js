@@ -10,6 +10,7 @@ const supplierRoutes = require('./routes/suppliers');
 const salesRoutes = require('./routes/sales');
 const reportsRoutes = require('./routes/reports');
 const smsRoutes = require('./routes/sms');
+const { createSseHandler } = require('./services/realtime');
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use('/api/suppliers', supplierRoutes);
 app.use('/api/sales', salesRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/sms', smsRoutes);
+app.get('/api/stream', createSseHandler);
 
 app.get('/', (req, res) => res.json({ ok: true, service: 'store-manager-backend' }));
 

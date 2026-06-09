@@ -32,6 +32,7 @@ CREATE TABLE products (
   expiry_date DATE,
   supplier_id INTEGER REFERENCES suppliers(id) ON DELETE SET NULL,
   reorder_level INTEGER DEFAULT 0,
+  image_url TEXT,
   created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -39,6 +40,7 @@ CREATE TABLE sales (
   id SERIAL PRIMARY KEY,
   user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
   total_amount NUMERIC(12,2) DEFAULT 0,
+  customer_name TEXT,
   date TIMESTAMP DEFAULT NOW()
 );
 
@@ -47,7 +49,8 @@ CREATE TABLE sale_items (
   sale_id INTEGER REFERENCES sales(id) ON DELETE CASCADE,
   product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
   quantity INTEGER NOT NULL,
-  price NUMERIC(12,2) NOT NULL
+  price NUMERIC(12,2) NOT NULL,
+  cost_price NUMERIC(12,2) DEFAULT 0
 );
 
 CREATE TABLE stock_movements (

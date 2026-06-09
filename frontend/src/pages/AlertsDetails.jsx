@@ -23,9 +23,6 @@ const metricEmptyMessages = {
 
 const AlertsDetails = () => {
   const { metricId } = useParams()
-  const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
-  const role = currentUser?.role === 'owner' ? 'ceo' : currentUser?.role
-  const canRemoveExpired = ['manager', 'ceo'].includes(role)
   const [loading, setLoading] = useState(true)
   const [items, setItems] = useState([])
   const [summary, setSummary] = useState('')
@@ -51,7 +48,7 @@ const AlertsDetails = () => {
   }
 
   const buildProductMeta = (product, extraLines = []) => [
-    `Barcode: ${product.barcode || '-'}`,
+    `SKU / Product Code: ${product.barcode || '-'}`,
     `Category: ${product.category || '-'}`,
     `Quantity: ${product.quantity ?? 0}`,
     `Reorder level: ${product.reorder_level ?? 0}`,
@@ -102,7 +99,7 @@ const AlertsDetails = () => {
               item.expiry_date ? `Expired on ${new Date(item.expiry_date).toLocaleDateString()}` : 'Expired item',
               'Status: expired',
             ]).join(' | '),
-            action: canRemoveExpired && isExpired(item.expiry_date) ? { label: role === 'manager' ? 'Remove expired' : 'Delete', productId: item.id, productName: item.name } : null,
+            action: isExpired(item.expiry_date) ? { label: 'Delete', productId: item.id, productName: item.name } : null,
           })))
           break
         case 'missing':

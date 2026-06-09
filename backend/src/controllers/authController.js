@@ -22,7 +22,7 @@ const normalizePhone = (phone) => {
 const normalizeRole = (role) => {
   const value = String(role || '').trim().toLowerCase();
   if (value === 'owner') return 'ceo';
-  if (value === 'shop attendant' || value === 'shop_attendant' || value === 'saler') return 'salesperson';
+  if (['shop attendant', 'shop_attendant', 'saler'].includes(value)) return 'salesperson';
   if (value === 'casher') return 'cashier';
   return value;
 };
@@ -46,11 +46,7 @@ const isValidEmail = (email) => EMAIL_REGEX.test(String(email || '').trim());
 const isValidPhone = (phone) => GH_PHONE_REGEX.test(String(phone || '').trim().replace(/\s+/g, ''));
 
 const getApprovalError = (role) => {
-  const normalizedRole = normalizeRole(role);
-  if (normalizedRole === 'manager') {
-    return 'Manager account is waiting for CEO approval';
-  }
-  return 'Account is waiting for manager or CEO approval';
+  return 'Account is waiting for approval';
 };
 
 const countActiveManagers = async (excludeUserId = null) => {
@@ -87,13 +83,15 @@ const register = async (req, res) => {
     if (userExists.rows.length) return res.status(409).json({ error: 'Email already registered' });
     const phoneExists = await db.query('SELECT id FROM users WHERE phone=$1', [normalizedPhone]);
     if (phoneExists.rows.length) return res.status(409).json({ error: 'Phone number already registered' });
+    
+    // All roles now require approval - no special treatment for CEO
     if (normalizedRole === 'ceo') {
       const ceoCountResult = await db.query(
         "SELECT COUNT(*)::int AS total FROM users WHERE deleted_at IS NULL AND lower(role) IN ('ceo','owner')"
       );
       const ceoCount = ceoCountResult.rows[0]?.total || 0;
       if (ceoCount >= 3) {
-        return res.status(403).json({ error: 'cant create account, consult the manager' });
+        return res.status(403).json({ error: 'Maximum CEO accounts already created' });
       }
     }
     if (normalizedRole === 'manager') {
@@ -103,7 +101,7 @@ const register = async (req, res) => {
       }
     }
     const hash = await bcrypt.hash(password, 10);
-    const approved = normalizedRole === 'ceo';
+    const approved = false; // All users require approval
     const client = db.pool && typeof db.pool.connect === 'function' ? await db.pool.connect() : null;
     const tx = client || {
       query: (...args) => db.query(...args),
@@ -146,8 +144,7 @@ const register = async (req, res) => {
       return res.status(201).json({
         ...user,
         verification_required: true,
-        approval_required: !approved,
-        approval_required_by: !approved ? (normalizedRole === 'manager' ? 'ceo' : 'manager_or_ceo') : null,
+        approval_required: true,
         sms_sent: smsSent,
         sms_error: smsSent ? null : smsMessage,
       });
@@ -239,7 +236,7 @@ const forgotPassword = async (req, res) => {
       sms_error: smsSent ? null : smsError,
       message: smsSent
         ? 'Password reset code sent to the registered phone number'
-        : 'Password reset code could not be sent right now. If you already received one, continue with the code below or try again.',
+        : 'Password reset code could not be sent right now.',
     });
   } catch (err) {
     console.error(err);

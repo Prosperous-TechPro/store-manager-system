@@ -11,6 +11,11 @@ Quick start (backend):
 3. copy .env.example to .env and set DATABASE_URL and JWT_SECRET
 4. npm run dev
 
+Quick start (frontend):
+1. cd frontend
+2. npm install
+3. npm run dev
+
 Database:
 - Uses PostgreSQL. Run the SQL in database/schema.sql to create tables.
 

@@ -1,4 +1,5 @@
 const db = require('../models/db');
+const { broadcast } = require('../services/realtime');
 
 const listProducts = async (req, res) => {
   try {
@@ -44,13 +45,14 @@ const getProductByBarcode = async (req, res) => {
 };
 
 const createProduct = async (req, res) => {
-  const { name, barcode, category, cost_price, selling_price, quantity, supplier_id, expiry_date, reorder_level } = req.body;
+  const { name, barcode, image_url, category, cost_price, selling_price, quantity, supplier_id, expiry_date, reorder_level } = req.body;
   try {
     const result = await db.query(
-      `INSERT INTO products(name, barcode, category, cost_price, selling_price, quantity, supplier_id, expiry_date, reorder_level)
-       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-      [name, barcode, category, cost_price, selling_price, quantity || 0, supplier_id || null, expiry_date || null, reorder_level || 0]
+      `INSERT INTO products(name, barcode, image_url, category, cost_price, selling_price, quantity, supplier_id, expiry_date, reorder_level)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+      [name, barcode, image_url || null, category, cost_price, selling_price, quantity || 0, supplier_id || null, expiry_date || null, reorder_level || 0]
     );
+    broadcast('inventory', { action: 'product_created', product: result.rows[0] });
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error(err);
@@ -68,6 +70,7 @@ const updateProduct = async (req, res) => {
   try {
     const result = await db.query(`UPDATE products SET ${set} WHERE id=$${keys.length + 1} RETURNING *`, [...values, id]);
     if (!result.rows.length) return res.status(404).json({ error: 'Not found' });
+    broadcast('inventory', { action: 'product_updated', product: result.rows[0] });
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);

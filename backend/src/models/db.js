@@ -48,6 +48,7 @@ const initSchema = async () => {
           expiry_date DATE,
           supplier_id INTEGER REFERENCES suppliers(id) ON DELETE SET NULL,
           reorder_level INTEGER DEFAULT 0,
+          image_url TEXT,
           created_at TIMESTAMP DEFAULT NOW()
         )
       `);
@@ -57,6 +58,7 @@ const initSchema = async () => {
           id SERIAL PRIMARY KEY,
           user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
           total_amount NUMERIC(12,2) DEFAULT 0,
+          customer_name TEXT,
           date TIMESTAMP DEFAULT NOW()
         )
       `);
@@ -67,7 +69,8 @@ const initSchema = async () => {
           sale_id INTEGER REFERENCES sales(id) ON DELETE CASCADE,
           product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
           quantity INTEGER NOT NULL,
-          price NUMERIC(12,2) NOT NULL
+          price NUMERIC(12,2) NOT NULL,
+          cost_price NUMERIC(12,2) DEFAULT 0
         )
       `);
 
@@ -115,6 +118,21 @@ const initSchema = async () => {
           ADD COLUMN IF NOT EXISTS approved BOOLEAN DEFAULT FALSE,
           ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP,
           ADD COLUMN IF NOT EXISTS approved_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+      `);
+
+      await pool.query(`
+        ALTER TABLE products
+          ADD COLUMN IF NOT EXISTS image_url TEXT
+      `);
+
+      await pool.query(`
+        ALTER TABLE sales
+          ADD COLUMN IF NOT EXISTS customer_name TEXT
+      `);
+
+      await pool.query(`
+        ALTER TABLE sale_items
+          ADD COLUMN IF NOT EXISTS cost_price NUMERIC(12,2) DEFAULT 0
       `);
 
       await pool.query(`

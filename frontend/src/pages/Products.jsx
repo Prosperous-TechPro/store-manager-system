@@ -4,11 +4,6 @@ import ProductForm from '../components/ProductForm'
 import useSyncRefresh from '../hooks/useSyncRefresh'
 
 const Products = () => {
-  const user = JSON.parse(localStorage.getItem('user') || 'null')
-  const role = user?.role === 'owner' ? 'ceo' : user?.role
-  const canManageProducts = ['manager', 'ceo'].includes(role)
-  const canAddProducts = role === 'manager'
-  const canDeleteProducts = role === 'manager'
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -77,7 +72,7 @@ const Products = () => {
     <div className="page landing-page">
       <section className="hero-card landing-hero">
         <div className="hero-copy">
-          <div className="auth-badge">Inventory</div>
+          <div className="hero-subtitle"><span className="inventory-title">Inventory</span></div>
           <h1 className="hero-title" style={{ fontSize: '2.1rem', marginTop: 6 }}>Products</h1>
           <p className="hero-subtitle">Add, review, and maintain your store catalogue in one clean view.</p>
         </div>
@@ -86,7 +81,7 @@ const Products = () => {
             <form className="search-bar" onSubmit={onSearch}>
               <input
                 type="search"
-                placeholder="Search products by name, barcode, supplier, category..."
+                placeholder="Search products by name, SKU, supplier, category..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 aria-label="Search products"
@@ -96,10 +91,8 @@ const Products = () => {
                 <button className="button-secondary search-button" type="button" onClick={onClearSearch}>Clear</button>
               )}
             </form>
-            {canAddProducts ? (
-              <button className="button-primary" onClick={onCreate}>Add Product</button>
-            ) : (
-              <span className="nav-chip">Read only</span>
+            {(
+              <button className="button-primary add-product-button" onClick={onCreate}>Add Product</button>
             )}
           </div>
         </div>
@@ -116,15 +109,15 @@ const Products = () => {
               </thead>
               <tbody>
                 {filteredProducts.map(p=> (
-                  <tr key={p.id}>
+                    <tr key={p.id} className={isExpired(p.expiry_date) ? 'expired-row' : ''}>
                     <td>{p.name}</td>
                     <td><span className={p.quantity <= (p.reorder_level || 0) ? 'tag tag-warn' : 'tag tag-success'}>{p.quantity}</span></td>
                     <td>{p.expiry_date || '-'}</td>
                     <td>{p.supplier_name || '-'}</td>
                     <td>
                       <div className="table-actions">
-                        {canManageProducts && <button className="button-secondary" onClick={()=>onEdit(p)}>Edit</button>}
-                        {canDeleteProducts && isExpired(p.expiry_date) && <button className="button-danger" onClick={()=>onDelete(p.id)}>Delete expired</button>}
+                        <button className="button-secondary" onClick={()=>onEdit(p)}>Edit</button>
+                          {isExpired(p.expiry_date) && <button className="button-danger" onClick={()=>onDelete(p.id)}>Remove</button>}
                       </div>
                     </td>
                   </tr>
@@ -135,7 +128,7 @@ const Products = () => {
 
             <div className="data-card-list">
               {filteredProducts.map((p) => (
-                <article key={`product-${p.id}`} className="data-card panel">
+                  <article key={`product-${p.id}`} className={`data-card panel ${isExpired(p.expiry_date) ? 'expired-row' : ''}`}>
                   <div className="data-card-head">
                     <div>
                       <h2 className="approval-card-title">{p.name}</h2>
@@ -157,8 +150,8 @@ const Products = () => {
 
                   <div className="approval-card-actions">
                     <div className="table-actions">
-                      {canManageProducts && <button className="button-secondary" onClick={()=>onEdit(p)}>Edit</button>}
-                      {canDeleteProducts && isExpired(p.expiry_date) && <button className="button-danger" onClick={()=>onDelete(p.id)}>Delete expired</button>}
+                      <button className="button-secondary" onClick={()=>onEdit(p)}>Edit</button>
+                          {isExpired(p.expiry_date) && <button className="button-danger" onClick={()=>onDelete(p.id)}>Remove</button>}
                     </div>
                   </div>
                 </article>
@@ -175,8 +168,18 @@ const Products = () => {
         )}
       </div>
 
-      {showForm && canManageProducts && (
-        <ProductForm product={editing} onClose={()=>{setShowForm(false); setEditing(null)}} onSaved={()=>{setShowForm(false); load()}} />
+      {showForm && (
+        <ProductForm
+          product={editing}
+          onClose={()=>{setShowForm(false); setEditing(null)}}
+          onSaved={(keepOpen)=>{
+            if (!keepOpen) {
+              setShowForm(false)
+              setEditing(null)
+            }
+            load()
+          }}
+        />
       )}
     </div>
   )

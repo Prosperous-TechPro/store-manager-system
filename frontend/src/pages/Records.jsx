@@ -10,11 +10,6 @@ const Records = () => {
   const [deleteReason, setDeleteReason] = useState('')
   const [deleting, setDeleting] = useState(false)
   const [approvingId, setApprovingId] = useState(null)
-  const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
-  const currentRole = currentUser?.role === 'owner' ? 'ceo' : currentUser?.role
-  const canSeeDeleteReason = ['ceo', 'admin'].includes(currentRole)
-  const canDeleteUsers = ['manager', 'ceo', 'admin'].includes(currentRole)
-  const canApproveUsers = ['manager', 'ceo'].includes(currentRole)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -87,7 +82,7 @@ const Records = () => {
         <div>
           <div className="auth-badge">Access records</div>
           <h1 className="hero-title" style={{ fontSize: '2.1rem', marginTop: 6 }}>Site Users</h1>
-          <p className="hero-subtitle">CEO and manager accounts can review people using the system and their verification status.</p>
+          <p className="hero-subtitle">Review all people using the system, their verification status, and manage access.</p>
         </div>
       </section>
 
@@ -108,8 +103,8 @@ const Records = () => {
                 <th>Role</th>
                 <th>Verified</th>
                 <th>Approval</th>
-                {canApproveUsers && <th>Approve</th>}
-                {canDeleteUsers && <th>Action</th>}
+                <th>Approve</th>
+                <th>Action</th>
                 <th>Created</th>
               </tr>
             </thead>
@@ -122,22 +117,18 @@ const Records = () => {
                   <td><span className="tag tag-role">Role: {user.role}</span></td>
                   <td>{user.phone_verified ? <span className="tag tag-success">Yes</span> : <span className="tag tag-warn">No</span>}</td>
                   <td>{user.approved ? <span className="tag tag-success">Approved</span> : <span className="tag tag-warn">Pending</span>}</td>
-                  {canApproveUsers && (
-                    <td>
-                      {!user.approved ? (
-                        <button className="button-secondary" onClick={() => approveUser(user)} disabled={approvingId === user.id}>
-                          {approvingId === user.id ? 'Approving...' : 'Approve'}
-                        </button>
-                      ) : (
-                        <span className="section-note">{user.approved_at ? new Date(user.approved_at).toLocaleString() : '-'}</span>
-                      )}
-                    </td>
-                  )}
-                  {canDeleteUsers && (
-                    <td>
-                      <button className="button-secondary" onClick={() => openDelete(user)}>Delete</button>
-                    </td>
-                  )}
+                  <td>
+                    {!user.approved ? (
+                      <button className="button-secondary" onClick={() => approveUser(user)} disabled={approvingId === user.id}>
+                        {approvingId === user.id ? 'Approving...' : 'Approve'}
+                      </button>
+                    ) : (
+                      <span className="section-note">{user.approved_at ? new Date(user.approved_at).toLocaleString() : '-'}</span>
+                    )}
+                  </td>
+                  <td>
+                    <button className="button-secondary" onClick={() => openDelete(user)}>Delete</button>
+                  </td>
                   <td>{user.created_at ? new Date(user.created_at).toLocaleString() : '-'}</td>
                 </tr>
               ))}
@@ -177,14 +168,12 @@ const Records = () => {
 
                 <div className="approval-card-actions">
                   <div className="table-actions">
-                    {canApproveUsers && !user.approved && (
+                    {!user.approved && (
                       <button className="button-secondary" onClick={() => approveUser(user)} disabled={approvingId === user.id}>
                         {approvingId === user.id ? 'Approving...' : 'Approve'}
                       </button>
                     )}
-                    {canDeleteUsers && (
-                      <button className="button-secondary" onClick={() => openDelete(user)}>Delete</button>
-                    )}
+                    <button className="button-secondary" onClick={() => openDelete(user)}>Delete</button>
                   </div>
                 </div>
               </article>

@@ -1,7 +1,8 @@
 const db = require('../models/db');
+const { broadcast } = require('../services/realtime');
 
 const createSale = async (req, res) => {
-  const { items, amount, total_amount } = req.body; // items: [{ product_id, quantity, price }]
+  const { items, amount, total_amount, customer_name } = req.body;
   const saleAmount = Number.parseFloat(amount ?? total_amount);
   const hasItems = Array.isArray(items) && items.length > 0;
   if (!hasItems && !Number.isFinite(saleAmount)) return res.status(400).json({ error: 'Sale amount is required' });
@@ -12,7 +13,7 @@ const createSale = async (req, res) => {
         .map((item) => ({
           product_id: Number.parseInt(item.product_id, 10),
           quantity: Number.parseInt(item.quantity, 10),
-          price: Number.parseFloat(item.price),
+          price: Number.parseFloat(item.price ?? item.unit_price),
         }))
         .filter((item) => Number.isFinite(item.product_id) && Number.isFinite(item.quantity) && item.quantity > 0)
     : [];
@@ -26,13 +27,18 @@ const createSale = async (req, res) => {
     await client.query('BEGIN');
     const cashierResult = await client.query('SELECT id, name FROM users WHERE id=$1', [req.user.id]);
     const cashierName = cashierResult.rows[0]?.name || 'Cashier';
-    const saleRes = await client.query('INSERT INTO sales(user_id,total_amount,date) VALUES($1,$2,NOW()) RETURNING id,date', [req.user.id, hasItems ? 0 : saleAmount]);
+    
+    // Requirement 1: Unique receipt (ID) and customer name
+    // Requirement 11: Cashier name linked via user_id
+    const saleRes = await client.query('INSERT INTO sales(user_id,total_amount,customer_name,date) VALUES($1,$2,$3,NOW()) RETURNING id,date', 
+      [req.user.id, hasItems ? 0 : saleAmount, customer_name || 'Valued Customer']);
+    
     const saleId = saleRes.rows[0].id;
     let total = hasItems ? 0 : saleAmount;
     const receiptItems = [];
     if (hasItems) {
       for (const it of normalizedItems) {
-        const productResult = await client.query('SELECT id, name, quantity, selling_price FROM products WHERE id=$1 FOR UPDATE', [it.product_id]);
+        const productResult = await client.query('SELECT id, name, quantity, selling_price, cost_price FROM products WHERE id=$1 FOR UPDATE', [it.product_id]);
         const product = productResult.rows[0];
         if (!product) {
           throw new Error(`Product ${it.product_id} not found`);
@@ -43,9 +49,11 @@ const createSale = async (req, res) => {
         }
 
         const unitPrice = Number.isFinite(it.price) ? it.price : Number.parseFloat(product.selling_price || 0);
+        const costPrice = Number.parseFloat(product.cost_price || 0);
         const lineTotal = unitPrice * it.quantity;
         total += lineTotal;
-        await client.query('INSERT INTO sale_items(sale_id,product_id,quantity,price) VALUES($1,$2,$3,$4)', [saleId, it.product_id, it.quantity, unitPrice]);
+        // Store cost_price at time of sale for accurate profit reporting (Requirement 12)
+        await client.query('INSERT INTO sale_items(sale_id,product_id,quantity,price,cost_price) VALUES($1,$2,$3,$4,$5)', [saleId, it.product_id, it.quantity, unitPrice, costPrice]);
         await client.query('UPDATE products SET quantity = quantity - $1 WHERE id=$2', [it.quantity, it.product_id]);
         await client.query('INSERT INTO stock_movements(product_id,type,quantity,date) VALUES($1,$2,$3,NOW())', [it.product_id, 'sale', it.quantity]);
         receiptItems.push({
@@ -59,13 +67,17 @@ const createSale = async (req, res) => {
       await client.query('UPDATE sales SET total_amount=$1 WHERE id=$2', [total, saleId]);
     }
     await client.query('COMMIT');
-    res.status(201).json({
+    const payload = {
       saleId,
       total,
-      date: saleRes.rows[0].date,
+      customer_name: customer_name || 'Valued Customer',
       cashier_name: cashierName,
       items: hasItems ? receiptItems : [],
-    });
+      date: saleRes.rows[0].date,
+    };
+    broadcast('sales', { action: 'created', sale: payload });
+    broadcast('inventory', { action: 'updated' });
+    res.status(201).json(payload);
   } catch (err) {
     await client.query('ROLLBACK');
     console.error(err);
@@ -79,13 +91,83 @@ const createSale = async (req, res) => {
 
 const getSalesSummary = async (req, res) => {
   try {
-    const result = await db.query(
+    // Requirement 1 & 12: CEO/Manager can view Revenue, Cost, and Profit
+    const basics = await db.query(
       `SELECT
          COALESCE(SUM(total_amount), 0)::numeric AS total_sales,
          COUNT(*)::int AS transactions
        FROM sales`
     );
-    res.json(result.rows[0] || { total_sales: 0, transactions: 0 });
+
+    const costs = await db.query(
+      `SELECT
+         COALESCE(SUM(si.quantity * si.cost_price), 0)::numeric AS total_cost
+       FROM sale_items si`
+    );
+
+    const totalSales = Number.parseFloat(basics.rows[0].total_sales);
+    const totalCost = Number.parseFloat(costs.rows[0].total_cost);
+
+    // Requirement 12 Detail Drill-down using stored cost_price
+    const details = await db.query(
+      `SELECT
+         s.id AS sale_id,
+         s.total_amount AS revenue,
+         COALESCE(SUM(si.quantity * si.cost_price), 0)::numeric AS cost,
+         (s.total_amount - COALESCE(SUM(si.quantity * si.cost_price), 0))::numeric AS profit
+       FROM sales s
+       LEFT JOIN sale_items si ON si.sale_id = s.id
+       GROUP BY s.id, s.total_amount, s.date
+       ORDER BY s.date DESC
+       LIMIT 50`
+    );
+
+    res.json({
+      total_sales: totalSales,
+      transactions: basics.rows[0].transactions,
+      total_cost: totalCost,
+      total_profit: totalSales - totalCost,
+      details: details.rows
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// Requirement 10: Search receipt by number
+const getSaleById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const saleResult = await db.query(
+      `SELECT s.*, u.name as cashier_name 
+       FROM sales s 
+       LEFT JOIN users u ON u.id = s.user_id 
+       WHERE s.id = $1`, [id]
+    );
+    if (saleResult.rows.length === 0) return res.status(404).json({ error: 'Receipt not found' });
+
+    const itemsResult = await db.query(
+      `SELECT si.*, p.name as product_name 
+       FROM sale_items si 
+       JOIN products p ON p.id = si.product_id 
+       WHERE si.sale_id = $1`, [id]
+    );
+
+    const sale = saleResult.rows[0];
+    res.json({
+      saleId: sale.id,
+      total: Number.parseFloat(sale.total_amount),
+      date: sale.date,
+      customer_name: sale.customer_name,
+      cashier_name: sale.cashier_name,
+      items: itemsResult.rows.map(item => ({
+        product_name: item.product_name,
+        quantity: item.quantity,
+        unit_price: Number.parseFloat(item.price),
+        line_total: Number.parseFloat(item.price) * item.quantity
+      }))
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
@@ -110,6 +192,7 @@ const listSalesDetails = async (req, res) => {
          s.user_id,
          s.total_amount,
          s.date,
+         s.customer_name,
          u.name AS cashier_name,
          si.id AS item_id,
          si.quantity,
@@ -133,6 +216,7 @@ const listSalesDetails = async (req, res) => {
           user_id: row.user_id,
           cashier_name: row.cashier_name,
           total_amount: row.total_amount,
+          customer_name: row.customer_name,
           date: row.date,
           items: [],
         });
@@ -182,4 +266,4 @@ const resetSalesTotal = async (req, res) => {
   }
 };
 
-module.exports = { createSale, getSalesSummary, listSales, listSalesDetails, resetSalesTotal };
+module.exports = { createSale, getSalesSummary, listSales, listSalesDetails, resetSalesTotal, getSaleById };

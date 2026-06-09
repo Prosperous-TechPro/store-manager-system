@@ -8,7 +8,17 @@ const name = process.argv[2];
 const email = process.argv[3];
 const phone = process.argv[4];
 const password = process.argv[5];
-const role = process.argv[6] || 'casher';
+const roleArg = process.argv[6] || 'cashier';
+
+const normalizeRoleInput = (value) => {
+  const role = String(value || '').trim().toLowerCase();
+  if (role === 'casher') return 'cashier';
+  if (['shop attendant', 'shop_attendant', 'saler'].includes(role)) return 'salesperson';
+  if (role === 'owner') return 'ceo';
+  return role;
+};
+
+const role = normalizeRoleInput(roleArg);
 
 if (!name || !email || !phone || !password) {
   console.error('Usage: node create_user_noninteractive.js <name> <email> <phone> <password> [role]');

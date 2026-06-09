@@ -7,9 +7,6 @@ const Approvals = () => {
   const [error, setError] = useState('')
   const [users, setUsers] = useState([])
   const [approvingId, setApprovingId] = useState(null)
-  const currentUser = JSON.parse(localStorage.getItem('user') || 'null')
-  const currentRole = currentUser?.role === 'owner' ? 'ceo' : currentUser?.role
-  const canApprove = ['manager', 'ceo'].includes(currentRole)
 
   const signOutForInvalidSession = (message) => {
     localStorage.removeItem('token')
@@ -25,12 +22,7 @@ const Approvals = () => {
     try {
       const token = localStorage.getItem('token')
       if (!token) {
-        setError('Not authenticated. Please sign in as an approved manager or CEO.')
-        setUsers([])
-        return
-      }
-      if (!canApprove) {
-        setError('You do not have permission to view approval requests.')
+        setError('Not authenticated. Please sign in.')
         setUsers([])
         return
       }
@@ -47,7 +39,7 @@ const Approvals = () => {
     } finally {
       setLoading(false)
     }
-  }, [canApprove])
+  }, [])
 
   useEffect(() => {
     loadPending()
@@ -77,7 +69,7 @@ const Approvals = () => {
       <section className="hero-card">
         <div className="auth-badge">Request for approval</div>
         <h1 className="hero-title">Pending account requests</h1>
-        <p className="hero-subtitle">CEO and manager accounts can approve most signups before access is granted. Manager-role accounts require CEO approval.</p>
+        <p className="hero-subtitle">All staff members can approve pending signups before access is granted.</p>
       </section>
 
       {loading ? (
@@ -109,13 +101,9 @@ const Approvals = () => {
                   <td>{user.phone_verified ? <span className="tag tag-success">Yes</span> : <span className="tag tag-warn">No</span>}</td>
                   <td>{user.created_at ? new Date(user.created_at).toLocaleString() : '-'}</td>
                   <td>
-                    {canApprove ? (
-                      <button className="button-primary" onClick={() => approveUser(user)} disabled={approvingId === user.id}>
-                        {approvingId === user.id ? 'Approving...' : 'Approve'}
-                      </button>
-                    ) : (
-                      <span className="section-note">Insufficient privileges</span>
-                    )}
+                    <button className="button-primary" onClick={() => approveUser(user)} disabled={approvingId === user.id}>
+                      {approvingId === user.id ? 'Approving...' : 'Approve'}
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -150,13 +138,9 @@ const Approvals = () => {
                 </div>
 
                 <div className="approval-card-actions">
-                  {canApprove ? (
-                    <button className="button-primary" onClick={() => approveUser(user)} disabled={approvingId === user.id}>
-                      {approvingId === user.id ? 'Approving...' : 'Approve request'}
-                    </button>
-                  ) : (
-                    <span className="section-note">Insufficient privileges</span>
-                  )}
+                  <button className="button-primary" onClick={() => approveUser(user)} disabled={approvingId === user.id}>
+                    {approvingId === user.id ? 'Approving...' : 'Approve request'}
+                  </button>
                 </div>
               </article>
             ))}

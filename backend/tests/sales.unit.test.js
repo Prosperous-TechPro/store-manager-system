@@ -20,7 +20,7 @@ describe('salesController.unit', ()=>{
     // sequence: BEGIN, user lookup, INSERT INTO sales RETURNING id,date, product lookup, inserts, updates, stock_movements, then UPDATE sales
     mockClient.query.mockImplementation(async (text, params)=>{
       if (text.startsWith('SELECT id, name FROM users')) return { rows:[{ id: 7, name: 'Sam' }] }
-      if (text.startsWith('SELECT id, name, quantity, selling_price FROM products')) return { rows:[{ id: 1, name: 'Soap', quantity: 10, selling_price: 5.0 }] }
+      if (text.startsWith('SELECT id, name, quantity, selling_price, cost_price FROM products')) return { rows:[{ id: 1, name: 'Soap', quantity: 10, selling_price: 5.0, cost_price: 2.0 }] }
       if (text.startsWith('INSERT INTO sales')) return { rows:[{ id: 55, date: new Date().toISOString() }] }
       return { rows: [] }
     })
@@ -46,7 +46,7 @@ describe('salesController.unit', ()=>{
     })
     db.pool = { connect: jest.fn(async ()=> mockClient) }
 
-    const req = { user: { id: 9, role: 'casher' }, body: { amount: 123.45 } }
+    const req = { user: { id: 9, role: 'cashier' }, body: { amount: 123.45 } }
     const res = makeRes()
     await sales.createSale(req, res)
     expect(res._status).toBe(201)

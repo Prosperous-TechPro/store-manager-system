@@ -1,31 +1,18 @@
 const isLocalDev = typeof window !== 'undefined'
   && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
 
-const isVercelHost = typeof window !== 'undefined'
-  && (window.location.hostname.endsWith('.vercel.app') || window.location.hostname.includes('vercel.app'))
-
 const resolveApiBase = () => {
-  const configuredBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE || import.meta.env.VITE_BACKEND_URL || ''
-
-  if (typeof window !== 'undefined' && !isLocalDev) {
-    if (isVercelHost) {
-      return '/api'
-    }
-
-    if (configuredBase) {
-      const normalized = configuredBase.replace(/\/$/, '')
-      return normalized
-    }
-
-    return '/api'
-  }
+  // Prioritize explicit environment variables
+  const configuredBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE || import.meta.env.VITE_BACKEND_URL
 
   if (configuredBase) {
-    const normalized = configuredBase.replace(/\/$/, '')
-    return normalized
+    // Ensure no trailing slash
+    return configuredBase.replace(/\/$/, '')
   }
 
-  return 'http://localhost:4000/api'
+  // If no explicit environment variable is set, default to '/api'.
+  // This works for Vite's dev server proxy (local) and for same-origin APIs (production).
+  return '/api'
 }
 
 const API_BASE = resolveApiBase()

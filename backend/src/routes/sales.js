@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate, authorize } = require('../middleware/auth');
-const { createSale, getSalesSummary, listSales, listSalesDetails, resetSalesTotal } = require('../controllers/salesController');
+const { authenticate } = require('../middleware/auth');
+const { createSale, getSalesSummary, listSales, listSalesDetails, resetSalesTotal, getSaleById } = require('../controllers/salesController');
 
-router.post('/', authenticate, authorize(['cashier']), createSale);
-router.get('/summary', authenticate, authorize(['cashier', 'manager', 'ceo']), getSalesSummary);
-router.post('/reset', authenticate, authorize(['manager']), resetSalesTotal);
-router.get('/details', authenticate, authorize(['cashier', 'manager', 'ceo', 'admin']), listSalesDetails);
-router.get('/', authenticate, authorize(['cashier', 'manager', 'ceo', 'admin']), listSales);
+router.post('/', authenticate, createSale);
+router.get('/summary', authenticate, getSalesSummary);
+router.post('/reset', authenticate, resetSalesTotal);
+router.get('/details', authenticate, listSalesDetails);
+router.get('/:id', authenticate, getSaleById);
+router.get('/', authenticate, listSales);
 
 module.exports = router;

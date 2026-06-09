@@ -44,9 +44,8 @@ const approveUser = async (req, res) => {
     const targetResult = await db.query('SELECT id, role, approved FROM users WHERE id=$1', [targetId]);
     const target = targetResult.rows[0];
     if (!target) return res.status(404).json({ error: 'User not found' });
-    if (String(target.role || '').toLowerCase() === 'manager' && String(req.user.role || '').toLowerCase() !== 'ceo') {
-      return res.status(403).json({ error: 'Manager accounts must be approved by CEO' });
-    }
+    
+    // Allow all authenticated users to approve any user role
     if (String(target.role || '').toLowerCase() === 'manager') {
       const managerCount = await countActiveManagers(targetId);
       if (managerCount >= 2) {

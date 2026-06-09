@@ -19,7 +19,7 @@ const formatRecipientForHubtel = (phone) => {
 };
 
 const getHubtelUrl = () => {
-  return process.env.HUBTEL_API_URL || 'https://api.hubtel.com/v1/messages';
+  return process.env.HUBTEL_API_URL || 'https://smsc.hubtel.com/v1/messages/send';
 };
 
 const isProduction = () => process.env.NODE_ENV === 'production';
@@ -34,7 +34,7 @@ const buildHubtelRequest = (phone, content) => {
   const apiKey = process.env.HUBTEL_API_KEY;
   const clientId = process.env.HUBTEL_SMS_CLIENT_ID;
   const clientSecret = process.env.HUBTEL_SMS_CLIENT_SECRET;
-  const sender = process.env.HUBTEL_SENDER || process.env.HUBTEL_SMS_FROM || 'STORE';
+  const sender = process.env.HUBTEL_SENDER || process.env.HUBTEL_SMS_FROM || 'Prosperous';
   const url = new URL(baseUrl);
 
   if (apiKey) {
@@ -82,7 +82,7 @@ const buildHubtelFallbackRequests = (phone, content) => {
   const normalizedPhone = formatRecipientForHubtel(phone);
   const baseUrl = getHubtelUrl();
   const otpBase = process.env.HUBTEL_OTP_API_URL;
-  const sender = process.env.HUBTEL_SENDER || process.env.HUBTEL_SMS_FROM || 'STORE';
+  const sender = process.env.HUBTEL_SENDER || process.env.HUBTEL_SMS_FROM || 'Prosperous';
   const clientId = process.env.HUBTEL_SMS_CLIENT_ID;
   const clientSecret = process.env.HUBTEL_SMS_CLIENT_SECRET;
   const apiKey = process.env.HUBTEL_API_KEY;
@@ -256,7 +256,7 @@ const generateAndSendCode = async (phone, purpose = 'verification', options = {}
 
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   const hash = await bcrypt.hash(code, 10);
-  const message = `Your verification code is ${code}. It expires in ${SEND_EXPIRY_MINUTES} minutes.`;
+  const message = `Your verification code is ${code}. It expires in ${SEND_EXPIRY_MINUTES} minutes. wORNING!!!S: Do not share with anyone`;
 
   try {
     const result = await sendHubtelMessage(normalizedPhone, message);

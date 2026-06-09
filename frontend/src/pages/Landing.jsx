@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 const highlights = [
@@ -22,15 +22,9 @@ const features = [
   },
 ]
 
-const showcase = [
-  'Fresh stock visibility at a glance',
-  'Low-stock alerts for better planning',
-  'Simple workflows for the front desk',
-  'Built for a professional retail experience',
-]
-
 const Landing = () => {
   const token = localStorage.getItem('token')
+  const [hoveredFeature, setHoveredFeature] = useState(null)
 
   return (
     <div className="page landing-page">
@@ -75,60 +69,6 @@ const Landing = () => {
             ))}
           </div>
         </div>
-      </section>
-
-      <section className="grid-3" id="services">
-        {features.map((feature) => (
-          <article className="panel feature-card" key={feature.title}>
-            <p className="feature-kicker">Feature</p>
-            <h3>{feature.title}</h3>
-            <p className="section-note">{feature.description}</p>
-          </article>
-        ))}
-      </section>
-
-      <section className="showcase-band" id="why-choose-us">
-        <div>
-          <div className="auth-badge">Why teams like it</div>
-          <h2 className="section-title">Built to make the store feel organized and modern</h2>
-          <p className="section-note">
-            From the first login screen to daily product updates, the interface is designed to look sharp, stay readable, and make work feel lighter.
-          </p>
-        </div>
-        <div className="showcase-list">
-          {showcase.map((item) => (
-            <div className="showcase-item" key={item}>
-              <span className="showcase-dot" />
-              <span>{item}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="grid-2" id="support">
-        <article className="panel">
-          <p className="feature-kicker">Support</p>
-          <h3>Need help with the system?</h3>
-          <p className="section-note">Use the login page, review the documentation, or contact your store admin for access issues and training.</p>
-        </article>
-        <article className="panel" id="contact">
-          <p className="feature-kicker">Contact</p>
-          <h3>Talk to Prosperous TechPro</h3>
-          <p className="section-note">Add your official company email, phone number, and office location here before publishing the site.</p>
-        </article>
-      </section>
-
-      <section className="grid-2" id="documentation">
-        <article className="panel" id="legal">
-          <p className="feature-kicker">Documentation</p>
-          <h3>Helpful guides and compliance notes</h3>
-          <p className="section-note">See the documentation page for usage guidance and review the policy pages for privacy, terms, and cookie details.</p>
-        </article>
-        <article className="panel">
-          <p className="feature-kicker">Legal</p>
-          <h3>Policy-first setup for Ghana</h3>
-          <p className="section-note">The templates are written to align with Ghana-focused operational practices, but they should still be reviewed before production use.</p>
-        </article>
       </section>
     </div>
   )

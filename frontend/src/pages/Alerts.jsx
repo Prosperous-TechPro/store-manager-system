@@ -8,20 +8,15 @@ const Alerts = () => {
   const [error, setError] = useState('')
   const [expiryAlerts, setExpiryAlerts] = useState([])
   const [missingAlerts, setMissingAlerts] = useState([])
-  const [salesAlerts, setSalesAlerts] = useState([])
-  const [salesTotal, setSalesTotal] = useState(0)
 
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const [sales, expiry, missing] = await Promise.all([
-        api.get('/sales/details'),
+      const [expiry, missing] = await Promise.all([
         api.get('/reports/expiry'),
         api.get('/reports/missing'),
       ])
-      setSalesAlerts(Array.isArray(sales) ? sales : [])
-      setSalesTotal((Array.isArray(sales) ? sales : []).reduce((sum, s) => sum + Number.parseFloat(s.total_amount || 0), 0))
       setExpiryAlerts(Array.isArray(expiry) ? expiry : [])
       setMissingAlerts(Array.isArray(missing) ? missing : [])
     } catch (err) {
@@ -40,13 +35,6 @@ const Alerts = () => {
   const in1 = expiryAlerts.filter((it) => it.status === 'in_1_month')
 
   const metricCards = [
-    {
-      key: 'sales',
-      label: 'Sales total',
-      value: salesTotal.toFixed ? salesTotal.toFixed(2) : salesTotal,
-      note: `${salesAlerts.length} transactions`,
-      theme: 'metric-success',
-    },
     {
       key: 'in_3_months',
       label: 'Expiring in 3 months',
@@ -88,8 +76,8 @@ const Alerts = () => {
     <div className="page static-page">
       <section className="hero-card">
         <div className="auth-badge">Management alerts</div>
-        <h1 className="hero-title">CEO and manager notifications</h1>
-        <p className="hero-subtitle">Track sales activity, expired stock, and missing product reports from one place.</p>
+        <h1 className="hero-title">Managment notifications</h1>
+        <p className="hero-subtitle">Track expired stock and missing product reports from one place.</p>
 
         <div className="metric-grid">
           {metricCards.map((metric) => (
@@ -113,7 +101,7 @@ const Alerts = () => {
             {expiredItems.length ? (
               <ul className="policy-list">
                 {expiredItems.map((item) => (
-                  <li key={item.id}>{item.name} is expired and should be removed from active stock.</li>
+                  <li key={item.id}>{item.name} Expired </li>
                 ))}
               </ul>
             ) : (

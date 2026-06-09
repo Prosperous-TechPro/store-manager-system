@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import useSyncRefresh from '../hooks/useSyncRefresh'
 
 const Receipts = () => {
+  const navigate = useNavigate()
   const [receipts, setReceipts] = useState([])
   const [receiptQuery, setReceiptQuery] = useState('')
   const [loading, setLoading] = useState(true)
@@ -38,7 +40,7 @@ const Receipts = () => {
         <div className="page-header">
           <div>
             <h1 className="hero-title">Receipt history</h1>
-            <p className="hero-subtitle">Saved customer receipts are stored here for manager review. Printing is restricted to cashier checkout flow.</p>
+            <p className="hero-subtitle">Saved customer receipts are stored here for review.</p>
           </div>
         </div>
       </section>
@@ -52,7 +54,7 @@ const Receipts = () => {
             onChange={(event) => setReceiptQuery(event.target.value)}
             placeholder="Type receipt number, e.g. 42"
           />
-          <div className="section-note">Manager and CEO can search receipts by receipt number only.</div>
+          <div className="section-note">Search receipts by receipt number only.</div>
         </div>
 
         {loading ? (
@@ -60,9 +62,9 @@ const Receipts = () => {
         ) : error ? (
           <div className="error-banner">{error}</div>
         ) : filteredReceipts.length ? (
-          <div className="data-card-list">
+          <div className="receipts-list">
             {filteredReceipts.map((receipt) => (
-              <article key={receipt.id} className="data-card panel">
+              <article key={receipt.id} className="receipt-card panel">
                 <div className="data-card-head">
                   <div>
                     <h2 className="approval-card-title">Receipt #{receipt.id}</h2>
@@ -75,6 +77,10 @@ const Receipts = () => {
                   <div>
                     <span className="approval-label">Cashier</span>
                     <div>{receipt.cashier_name || '-'}</div>
+                  </div>
+                  <div>
+                    <span className="approval-label">Customer</span>
+                    <div>{receipt.customer_name || 'Valued Customer'}</div>
                   </div>
                   <div>
                     <span className="approval-label">Items</span>
@@ -103,6 +109,9 @@ const Receipts = () => {
                       ))}
                     </tbody>
                   </table>
+                </div>
+                <div className="section-actions" style={{ marginTop: 16 }}>
+                  <button className="button-primary" onClick={() => navigate(`/receipt/${receipt.id}`)}>View / Print</button>
                 </div>
               </article>
             ))}

@@ -83,7 +83,7 @@ describe('authController.unit', ()=>{
       }
       if (text.startsWith('DELETE FROM users')) return Promise.resolve({ rows: [{ id: 22 }] })
       if (text.startsWith("SELECT phone\n       FROM users\n       WHERE lower(role) IN ('ceo','owner')")) {
-        return Promise.resolve({ rows: [{ phone: '+233200000000' }] })
+        return Promise.resolve({ rows: [{ phone: '+233248699146' }] })
       }
       return Promise.resolve({ rows: [] })
     })
@@ -97,8 +97,8 @@ describe('authController.unit', ()=>{
     expect(res._body.ok).toBe(true)
     expect(res._body.report.type).toBe('user_deletion')
     expect(res._body.report.delete_reason).toBe('Left company')
-    expect(res._body.report_delivered_to).toEqual([{ phone: '+233200000000', sent: true }])
-    expect(sms.sendTextMessage).toHaveBeenCalledWith('+233200000000', expect.stringContaining('Martha (martha@example.com)'))
+    expect(res._body.report_delivered_to).toEqual([{ phone: '+233248699146', sent: true }])
+    expect(sms.sendTextMessage).toHaveBeenCalledWith('+233248699146', expect.stringContaining('Martha (martha@example.com)'))
   })
 
   test('verifyPhone: verifies code and updates user', async ()=>{

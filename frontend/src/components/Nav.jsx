@@ -1,15 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import api from '../services/api'
+import { normalizeRole, displayRole } from '../utils/roles'
 
 const Nav = ()=>{
   const user = JSON.parse(localStorage.getItem('user') || 'null')
-  const role = user?.role === 'owner' ? 'ceo' : user?.role
-  const canViewAlerts = ['manager', 'ceo', 'admin'].includes(role)
-  const canViewRequests = ['manager', 'ceo'].includes(role)
-  const canViewSales = ['casher'].includes(role)
-  const canViewDashboard = ['casher', 'manager', 'ceo', 'admin'].includes(role)
-  const canViewReceipts = ['manager', 'ceo', 'admin'].includes(role)
+  const role = normalizeRole(user?.role)
   const [alertCount, setAlertCount] = useState(0)
   const [acctOpen, setAcctOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -18,7 +14,7 @@ const Nav = ()=>{
 
   useEffect(() => {
     const loadAlerts = async () => {
-      if (!canViewAlerts || !user) return
+      if (!user) return
       try {
         const [expiry, missing] = await Promise.all([
           api.get('/reports/expiry'),
@@ -33,7 +29,7 @@ const Nav = ()=>{
     }
 
     loadAlerts()
-  }, [canViewAlerts, user])
+  }, [user])
 
   useEffect(() => {
     const onDoc = (e) => {
@@ -64,7 +60,6 @@ const Nav = ()=>{
 
   const logout = ()=>{ localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href='/login' }
   const hideLogout = location?.pathname === '/account'
-  const canViewRecords = ['manager', 'ceo', 'admin'].includes(role)
 
   const closeMobile = () => setMobileOpen(false)
   const syncData = () => {
@@ -81,19 +76,19 @@ const Nav = ()=>{
         <Link to="/dashboard" className="brand topbar-brand">
           <span className="brand-mark" aria-hidden="true" />
           <span className="brand-copy">
-            <span>Store Management System</span>
-            <span>Inventory control</span>
+            <span>SMS</span>
+            <span>Inventory Control</span>
           </span>
         </Link>
         <nav className="nav-links nav-center" role="navigation" aria-label="Topbar actions">
           <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`} onClick={closeMobile}>Home</Link>
-          {canViewDashboard && <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`} onClick={closeMobile}>Dashboard</Link>}
+          <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`} onClick={closeMobile}>Dashboard</Link>
           <Link to="/products" className={`nav-link ${location.pathname === '/products' ? 'active' : ''}`} onClick={closeMobile}>Products</Link>
-          {canViewSales && <Link to="/sales" className={`nav-link ${location.pathname === '/sales' ? 'active' : ''}`} onClick={closeMobile}>Sales</Link>}
-          {canViewReceipts && <Link to="/receipts" className={`nav-link ${location.pathname === '/receipts' ? 'active' : ''}`} onClick={closeMobile}>Receipts</Link>}
-          {canViewRecords && <Link to="/records" className={`nav-link ${location.pathname === '/records' ? 'active' : ''}`} onClick={closeMobile}>Users</Link>}
-          {canViewRequests && <Link to="/requests" className={`nav-link ${location.pathname === '/requests' ? 'active' : ''}`} onClick={closeMobile}>Request</Link>}
-          {canViewAlerts && <Link to="/alerts" className={`nav-link nav-alert-link ${location.pathname === '/alerts' ? 'active' : ''}`} onClick={closeMobile}>Alerts{alertCount > 0 && <span className="badge">{alertCount}</span>}</Link>}
+          <Link to="/sales" className={`nav-link ${location.pathname === '/sales' ? 'active' : ''}`} onClick={closeMobile}>Sales</Link>
+          <Link to="/receipts" className={`nav-link ${location.pathname === '/receipts' ? 'active' : ''}`} onClick={closeMobile}>Receipts</Link>
+          <Link to="/records" className={`nav-link ${location.pathname === '/records' ? 'active' : ''}`} onClick={closeMobile}>Users</Link>
+          <Link to="/requests" className={`nav-link ${location.pathname === '/requests' ? 'active' : ''}`} onClick={closeMobile}>Requests</Link>
+          <Link to="/alerts" className={`nav-link nav-alert-link ${location.pathname === '/alerts' ? 'active' : ''}`} onClick={closeMobile}>Alerts{alertCount > 0 && <span className="badge">{alertCount}</span>}</Link>
         </nav>
 
         <div className="nav-actions nav-right">
@@ -103,7 +98,7 @@ const Nav = ()=>{
                 <span className="nav-account-badge">{user?.name?.charAt(0) || 'U'}</span>
                 <span className="nav-account-copy">
                   <span className="nav-account-name">{user.name}</span>
-                  <span className="nav-account-role">{role === 'ceo' ? 'CEO' : user.role}</span>
+                  <span className="nav-account-role">{displayRole(user.role)}</span>
                 </span>
               </button>
               {acctOpen && (
@@ -113,7 +108,7 @@ const Nav = ()=>{
                       <div className="profile-avatar" aria-hidden>{user?.name?.charAt(0) || 'U'}</div>
                       <div className="profile-info">
                         <div className="profile-name">{user.name}</div>
-                        <div className="profile-role">{role === 'ceo' ? 'CEO' : user.role}</div>
+                        <div className="profile-role">{displayRole(user.role)}</div>
                       </div>
                     </div>
                     <div className="profile-status"><span className="status-dot online" /> Online</div>
@@ -134,8 +129,8 @@ const Nav = ()=>{
       <aside className={`mobile-menu ${mobileOpen ? 'mobile-menu--open' : ''}`} aria-hidden={!mobileOpen}>
         <div className="mobile-menu-header">
           <div>
-            <div className="mobile-menu-title">Menu</div>
-            <div className="mobile-menu-subtitle">Quick access to store tools</div>
+            <div className="mobile-menu-title">SMS</div>
+            <div className="mobile-menu-subtitle">Inventory control</div>
           </div>
           <button className="hamburger-button mobile-menu-close" onClick={closeMobile} aria-label="Close menu">
             <span aria-hidden="true">×</span>
@@ -144,13 +139,13 @@ const Nav = ()=>{
 
         <nav className="mobile-menu-links" role="navigation" aria-label="Mobile navigation">
           <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`} onClick={closeMobile}>Home</Link>
-          {canViewDashboard && <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`} onClick={closeMobile}>Dashboard</Link>}
+          <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`} onClick={closeMobile}>Dashboard</Link>
           <Link to="/products" className={`nav-link ${location.pathname === '/products' ? 'active' : ''}`} onClick={closeMobile}>Products</Link>
-          {canViewSales && <Link to="/sales" className={`nav-link ${location.pathname === '/sales' ? 'active' : ''}`} onClick={closeMobile}>Sales</Link>}
-          {canViewReceipts && <Link to="/receipts" className={`nav-link ${location.pathname === '/receipts' ? 'active' : ''}`} onClick={closeMobile}>Receipts</Link>}
-          {canViewRecords && <Link to="/records" className={`nav-link ${location.pathname === '/records' ? 'active' : ''}`} onClick={closeMobile}>Users</Link>}
-          {canViewRequests && <Link to="/requests" className={`nav-link ${location.pathname === '/requests' ? 'active' : ''}`} onClick={closeMobile}>Request</Link>}
-          {canViewAlerts && <Link to="/alerts" className={`nav-link nav-alert-link ${location.pathname === '/alerts' ? 'active' : ''}`} onClick={closeMobile}>Alerts{alertCount > 0 && <span className="badge">{alertCount}</span>}</Link>}
+          <Link to="/sales" className={`nav-link ${location.pathname === '/sales' ? 'active' : ''}`} onClick={closeMobile}>Sales</Link>
+          <Link to="/receipts" className={`nav-link ${location.pathname === '/receipts' ? 'active' : ''}`} onClick={closeMobile}>Receipts</Link>
+          <Link to="/records" className={`nav-link ${location.pathname === '/records' ? 'active' : ''}`} onClick={closeMobile}>Users</Link>
+          <Link to="/requests" className={`nav-link ${location.pathname === '/requests' ? 'active' : ''}`} onClick={closeMobile}>Requests</Link>
+          <Link to="/alerts" className={`nav-link nav-alert-link ${location.pathname === '/alerts' ? 'active' : ''}`} onClick={closeMobile}>Alerts{alertCount > 0 && <span className="badge">{alertCount}</span>}</Link>
         </nav>
 
         <div className="mobile-menu-account">
@@ -161,7 +156,7 @@ const Nav = ()=>{
                   <div className="profile-avatar" aria-hidden>{user?.name?.charAt(0) || 'U'}</div>
                   <div className="profile-info">
                     <div className="profile-name">{user.name}</div>
-                    <div className="profile-role">{role === 'ceo' ? 'CEO' : user.role}</div>
+                    <div className="profile-role">{displayRole(user.role)}</div>
                   </div>
                 </div>
                 <div className="profile-status"><span className="status-dot online" /> Online</div>

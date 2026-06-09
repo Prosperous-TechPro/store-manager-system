@@ -3,20 +3,18 @@ import api from '../services/api'
 
 const ProductForm = ({ product, onClose, onSaved }) => {
   const [form, setForm] = useState({
-    name:'', barcode:'', category:'', cost_price:0, selling_price:0, quantity:0, supplier_id:'', expiry_date:'', reorder_level:0
+    name:'', barcode:'', image_url:'', category:'', cost_price:'', selling_price:'', quantity:'', supplier_id:'', expiry_date:'', reorder_level:''
   })
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState({})
   const [serverError, setServerError] = useState('')
-  const [markup, setMarkup] = useState(20) // percent markup default
+  const [markup, setMarkup] = useState('') // percent markup default
   const [suppliers, setSuppliers] = useState([])
   const [suppliersLoading, setSuppliersLoading] = useState(false)
-  const [barcodeTouched, setBarcodeTouched] = useState(false)
+  const [skuTouched, setSkuTouched] = useState(false)
   const [supplierDraft, setSupplierDraft] = useState({ id: '', name: '', contact: '' })
   const [supplierBusy, setSupplierBusy] = useState(false)
   const [supplierMessage, setSupplierMessage] = useState('')
-  const [barcodeLookupMessage, setBarcodeLookupMessage] = useState('')
-  const [barcodeLookupBusy, setBarcodeLookupBusy] = useState(false)
   const nameRef = useRef(null)
 
   const generateBarcode = (seed = '') => {
@@ -38,15 +36,14 @@ const ProductForm = ({ product, onClose, onSaved }) => {
 
   useEffect(()=>{
     if (product) setForm({
-      name:product.name||'', barcode:product.barcode||'', category:product.category||'', cost_price:product.cost_price||0,
-      selling_price:product.selling_price||0, quantity:product.quantity||0, supplier_id:product.supplier_id || '', expiry_date:product.expiry_date||'', reorder_level:product.reorder_level||0
+      name:product.name||'', barcode:product.barcode||'', image_url:product.image_url||'', category:product.category||'', cost_price:product.cost_price||"",
+      selling_price:product.selling_price||"", quantity:product.quantity||"", supplier_id:product.supplier_id || '', expiry_date:product.expiry_date||'', reorder_level:product.reorder_level||""
     })
     else {
       // focus name for quick add
       setTimeout(()=>{ nameRef.current && nameRef.current.focus() }, 100)
     }
-    setBarcodeTouched(Boolean(product?.barcode))
-    setBarcodeLookupMessage('')
+    setSkuTouched(Boolean(product?.barcode))
   },[product])
 
   useEffect(() => {
@@ -84,49 +81,6 @@ const ProductForm = ({ product, onClose, onSaved }) => {
 
   const change = (k,v) => setForm(prev=>({ ...prev, [k]: v }))
   const changeSupplierDraft = (k, v) => setSupplierDraft(prev => ({ ...prev, [k]: v }))
-
-  const applyScannedProduct = (item) => {
-    if (!item) return
-    setForm(prev => ({
-      ...prev,
-      name: item.name || prev.name,
-      barcode: item.barcode || prev.barcode,
-      category: item.category || prev.category,
-      cost_price: item.cost_price ?? prev.cost_price,
-      selling_price: item.selling_price ?? prev.selling_price,
-      quantity: item.quantity ?? prev.quantity,
-      supplier_id: item.supplier_id || prev.supplier_id,
-      expiry_date: item.expiry_date || prev.expiry_date,
-      reorder_level: item.reorder_level ?? prev.reorder_level,
-    }))
-    setBarcodeTouched(Boolean(item.barcode))
-  }
-
-  const lookupBarcode = async (rawBarcode = form.barcode) => {
-    const barcode = String(rawBarcode || '').trim()
-    if (!barcode) {
-      setBarcodeLookupMessage('Scan or enter a barcode first.')
-      return
-    }
-
-    setBarcodeLookupBusy(true)
-    setBarcodeLookupMessage('')
-    try {
-      const found = await api.get(`/products/barcode/${encodeURIComponent(barcode)}`)
-      applyScannedProduct(found)
-      setBarcodeLookupMessage(`Loaded details for ${found?.name || 'the scanned item'}.`)
-    } catch (err) {
-      if (err?.status === 404) {
-        setBarcodeLookupMessage('No existing product matches that barcode. Fill in the details to add it.')
-        setForm(prev => ({ ...prev, barcode }))
-        setBarcodeTouched(true)
-        return
-      }
-      setBarcodeLookupMessage(err?.message || 'Failed to look up barcode details.')
-    } finally {
-      setBarcodeLookupBusy(false)
-    }
-  }
 
   const refreshSuppliers = async (selectId = '') => {
     const rows = await api.get('/suppliers')
@@ -187,15 +141,14 @@ const ProductForm = ({ product, onClose, onSaved }) => {
     const m = parseFloat(markup) || 0
     const computed = Math.round((c * (1 + m/100)) * 100) / 100
     setForm(prev=>({ ...prev, selling_price: computed }))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [markup])
+  }, [form.cost_price, markup])
 
   useEffect(() => {
-    if (product || barcodeTouched || !form.name.trim()) return
+    if (product || skuTouched || !form.name.trim()) return
     const nextBarcode = generateBarcode(form.name)
     setForm(prev => prev.barcode === nextBarcode ? prev : { ...prev, barcode: nextBarcode })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.name, barcodeTouched, product])
+  }, [form.name, skuTouched, product])
 
   const submit = async (e, keepOpen=false)=>{
     e && e.preventDefault()
@@ -213,13 +166,13 @@ const ProductForm = ({ product, onClose, onSaved }) => {
       } else {
         await api.post('/products', normalizedPayload)
       }
-      onSaved && onSaved()
+      onSaved && onSaved(keepOpen)
       if (!keepOpen) onClose && onClose()
       else {
         // reset form for quick-add
-        setForm({ name:'', barcode:'', category:'', cost_price:0, selling_price:0, quantity:0, supplier_id:'', expiry_date:'', reorder_level:0 })
+        setForm({ name:'', barcode:'', image_url:'', category:'', cost_price:"", selling_price:"", quantity:"", supplier_id:'', expiry_date:'', reorder_level:"" })
         setErrors({})
-        setBarcodeTouched(false)
+        setSkuTouched(false)
         setTimeout(()=>{ nameRef.current && nameRef.current.focus() }, 50)
       }
     }catch(e){
@@ -242,7 +195,7 @@ const ProductForm = ({ product, onClose, onSaved }) => {
           <div>
             <div className="auth-badge">Quick Add</div>
             <h3 className="modal-title">{product ? 'Edit' : 'Add'} Product</h3>
-            <p className="section-note">Keep the form lean: name, barcode, supplier, and pricing are front and center.</p>
+            <p className="section-note">Keep the form lean: name, SKU, supplier, pricing and quantity are front and center.</p>
           </div>
           <button className="button-secondary" type="button" onClick={onClose} aria-label="Close add product panel">Close</button>
         </div>
@@ -257,24 +210,16 @@ const ProductForm = ({ product, onClose, onSaved }) => {
             </div>
 
             <div className="form-field">
-              <label>Barcode</label>
+              <label>SKU / Product Code</label>
               <div className="drawer-inline-input">
                 <input
-                  placeholder="Scan or enter a barcode"
+                  placeholder="Optional SKU or product code"
                   value={form.barcode}
-                  onChange={e=>{ setBarcodeTouched(true); change('barcode', e.target.value) }}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      lookupBarcode()
-                    }
-                  }}
+                  onChange={e=>{ setSkuTouched(true); change('barcode', e.target.value) }}
                 />
-                <button type="button" className="button-secondary" onClick={()=>lookupBarcode()} disabled={barcodeLookupBusy}>{barcodeLookupBusy ? 'Scanning...' : 'Scan'}</button>
-                <button type="button" className="button-secondary" onClick={()=>{ setBarcodeTouched(true); change('barcode', generateBarcode(form.name || 'ITEM')) }}>Generate</button>
+                <button type="button" className="button-secondary" onClick={()=>{ setSkuTouched(true); change('barcode', generateBarcode(form.name || 'ITEM')) }}>Generate</button>
               </div>
-              <div className="helper-text">Scan a barcode to pull product details from the store catalog, or generate a new one if this is a new item.</div>
-              {barcodeLookupMessage && <div className="section-note" style={{ marginTop: 6 }}>{barcodeLookupMessage}</div>}
+              <div className="helper-text">Optional code to track this product. No barcode scanner is required.</div>
             </div>
 
             <div className="form-field">
@@ -284,13 +229,13 @@ const ProductForm = ({ product, onClose, onSaved }) => {
 
             <div className="form-field">
               <label>Quantity</label>
-              <input type="number" min="0" step="1" value={form.quantity} onChange={e=>change('quantity', parseInt(e.target.value)||0)} />
+              <input placeholder="e.g. 12" type="number" min="0" step="1" value={form.quantity} onChange={e=>change('quantity', e.target.value === '' ? '' : parseInt(e.target.value, 10))} />
             </div>
 
             <div className="form-field">
               <label>Supplier</label>
               <select value={form.supplier_id} onChange={e=>change('supplier_id', e.target.value)}>
-                <option value="">No supplier</option>
+                <option value="">Select supplier</option>
                 {suppliersLoading ? (
                   <option value="" disabled>Loading suppliers...</option>
                 ) : suppliers.map(supplier => (
@@ -329,32 +274,34 @@ const ProductForm = ({ product, onClose, onSaved }) => {
 
             <div className="form-field">
               <label>Cost price (GHS)</label>
-              <input type="number" min="0" step="0.01" value={form.cost_price} onChange={e=>change('cost_price', parseFloat(e.target.value)||0)} />
+              <input className="compact-input" placeholder="e.g. 20.00" type="number" min="0" step="0.01" value={form.cost_price} onChange={e=>change('cost_price', e.target.value === '' ? '' : parseFloat(e.target.value))} />
               {errors.cost_price && <div style={{color:'#ffb4b4',marginTop:6}}>{errors.cost_price}</div>}
             </div>
 
             <div className="form-field">
               <label>Markup %</label>
-              <input type="number" min="0" step="1" value={markup} onChange={e=>setMarkup(parseFloat(e.target.value)||0)} />
+              <input placeholder="e.g. 15" type="number" min="0" step="1" value={markup} onChange={e=>setMarkup(e.target.value === '' ? '' : parseFloat(e.target.value))} />
             </div>
 
             <div className="form-field">
               <label>Selling price (GHS)</label>
-              <input type="number" min="0" step="0.01" value={form.selling_price} onChange={e=>change('selling_price', parseFloat(e.target.value)||0)} />
+              <input className="compact-input" placeholder="Auto-filled from cost + markup" type="number" min="0" step="0.01" value={form.selling_price} onChange={e=>change('selling_price', e.target.value === '' ? '' : parseFloat(e.target.value))} />
               {errors.selling_price && <div style={{color:'#ffb4b4',marginTop:6}}>{errors.selling_price}</div>}
             </div>
 
             <div className="form-field">
               <label>Expiry date</label>
-              <input type="date" value={form.expiry_date} onChange={e=>change('expiry_date', e.target.value)} />
+              <input placeholder="Select expiry date" type="date" value={form.expiry_date} onChange={e=>change('expiry_date', e.target.value)} />
             </div>
           </div>
 
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:16}}>
-            <div style={{color: 'var(--muted)'}}>Profit: GHS {(form.selling_price - form.cost_price).toFixed(2)}</div>
+            <div style={{color: 'var(--muted)'}}>Profit: GHS {((parseFloat(form.selling_price)||0) - (parseFloat(form.cost_price)||0)).toFixed(2)}</div>
             <div className="form-actions">
               <button className="button-primary" type="button" disabled={loading} onClick={(e)=>submit(e,false)}>{loading ? 'Saving...' : 'Save'}</button>
-              <button className="button-primary" type="button" disabled={loading} onClick={(e)=>submit(e,true)} style={{marginLeft:8}}>{loading ? 'Saving...' : 'Save & Add Another'}</button>
+              {!product && (
+                <button className="button-primary" type="button" disabled={loading} onClick={(e)=>submit(e,true)} style={{marginLeft:8}}>{loading ? 'Saving...' : 'Save & Add Another'}</button>
+              )}
               <button className="button-secondary" type="button" onClick={onClose} style={{marginLeft:8}}>Cancel</button>
             </div>
           </div>
