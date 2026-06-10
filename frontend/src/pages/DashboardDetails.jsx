@@ -87,11 +87,11 @@ const DashboardDetails = () => {
             })))
           break
         case 'low-stock':
-          setSummary(`There are ${productsList.filter((product) => (product.reorder_level || 0) >= (product.quantity || 0)).length} products at or below their reorder level.`)
-          setItems(productsList.filter((product) => (product.reorder_level || 0) >= (product.quantity || 0)).map((item) => ({
+          setSummary(`There are ${productsList.filter((product) => Number.parseInt(product.quantity || 0, 10) <= 10).length} products with quantity at or below 10.`)
+          setItems(productsList.filter((product) => Number.parseInt(product.quantity || 0, 10) <= 10).map((item) => ({
             key: item.id,
             label: item.name,
-            meta: `Quantity: ${item.quantity ?? 0} | Reorder level: ${item.reorder_level ?? 0} | Category: ${item.category || '-'}`,
+            meta: `Quantity: ${item.quantity ?? 0} | Category: ${item.category || '-'}`,
           })))
           break
         case 'expired-products':

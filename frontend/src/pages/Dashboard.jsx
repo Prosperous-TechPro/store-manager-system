@@ -4,6 +4,8 @@ import api from '../services/api'
 import { readSalesSnapshot } from '../services/salesSummary'
 import useSyncRefresh from '../hooks/useSyncRefresh'
 
+const LOW_STOCK_THRESHOLD = 10
+
 const Dashboard = () => {
   const [loading, setLoading] = useState(true)
   const [metrics, setMetrics] = useState({ totalProducts:0, totalQuantity:0, lowStock:0, salesTotal:0, transactions:0, expiredProducts:0, missingProducts:0 })
@@ -33,7 +35,7 @@ const Dashboard = () => {
       const missing = missingResult.status === 'fulfilled' && Array.isArray(missingResult.value) ? missingResult.value : []
       const totalProducts = products.length
       const totalQuantity = products.reduce((s,p)=>s + (p.quantity||0), 0)
-      const lowStock = products.filter(p=> (p.reorder_level || 0) >= (p.quantity || 0)).length
+      const lowStock = products.filter((p) => Number.parseInt(p.quantity || 0, 10) <= LOW_STOCK_THRESHOLD).length
       const salesTotal = Number.parseFloat(salesSnapshot.total_sales || 0)
       const transactions = Number.parseInt(salesSnapshot.transactions || 0, 10)
       const expiredProducts = expiry.filter((item) => item.status === 'expired').length

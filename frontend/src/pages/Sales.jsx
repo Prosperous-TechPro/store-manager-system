@@ -76,23 +76,25 @@ const Sales = () => {
   useSyncRefresh(loadSummary)
   useSyncRefresh(loadRecentSales)
 
+  const availableProducts = useMemo(() => products.filter((product) => Number.parseInt(product.quantity || 0, 10) > 0), [products])
+
   const filteredProducts = useMemo(() => {
     const query = productQuery.trim().toLowerCase()
-    if (!query) return products.slice(0, 50)
-    return products.filter((product) => [product.name, product.barcode, product.category, product.supplier_name]
+    if (!query) return availableProducts.slice(0, 50)
+    return availableProducts.filter((product) => [product.name, product.barcode, product.category, product.supplier_name]
       .filter(Boolean)
       .join(' ')
       .toLowerCase()
       .includes(query)).slice(0, 50)
-  }, [productQuery, products])
+  }, [productQuery, availableProducts])
 
   // Requirement 3: Live preview of price and line total before adding to cart
   const selectedProductPreview = useMemo(() => {
     const name = typedName.trim().toLowerCase()
     if (!name) return null
-    const product = products.find((item) => String(item.name || '').trim().toLowerCase() === name)
+    const product = availableProducts.find((item) => String(item.name || '').trim().toLowerCase() === name)
     return product || null
-  }, [typedName, products])
+  }, [typedName, availableProducts])
 
   const cartTotal = cart.reduce((sum, item) => sum + (Number.parseFloat(item.unitPrice || 0) * Number.parseInt(item.quantity || 0, 10)), 0)
 
@@ -371,7 +373,7 @@ const Sales = () => {
                 }}
               />
               <datalist id="sales-product-names">
-                {products.map((product) => (
+                {availableProducts.map((product) => (
                   <option key={product.id} value={product.name} />
                 ))}
               </datalist>

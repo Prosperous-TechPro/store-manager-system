@@ -111,7 +111,7 @@ const Products = () => {
                 {filteredProducts.map(p=> (
                     <tr key={p.id} className={isExpired(p.expiry_date) ? 'expired-row' : ''}>
                     <td>{p.name}</td>
-                    <td><span className={p.quantity <= (p.reorder_level || 0) ? 'tag tag-warn' : 'tag tag-success'}>{p.quantity}</span></td>
+                    <td><span className={Number.parseInt(p.quantity || 0, 10) <= 10 ? 'tag tag-warn' : 'tag tag-success'}>{p.quantity}</span></td>
                     <td>{p.expiry_date || '-'}</td>
                     <td>{p.supplier_name || '-'}</td>
                     <td>
@@ -134,7 +134,7 @@ const Products = () => {
                       <h2 className="approval-card-title">{p.name}</h2>
                       <p className="section-note">{p.category || 'Uncategorized'}</p>
                     </div>
-                    <span className={p.quantity <= (p.reorder_level || 0) ? 'tag tag-warn' : 'tag tag-success'}>{p.quantity}</span>
+                    <span className={Number.parseInt(p.quantity || 0, 10) <= 10 ? 'tag tag-warn' : 'tag tag-success'}>{p.quantity}</span>
                   </div>
 
                   <div className="approval-card-body">
