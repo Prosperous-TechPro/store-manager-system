@@ -117,7 +117,7 @@ const Products = () => {
                     <td>
                       <div className="table-actions">
                         <button className="button-secondary" onClick={()=>onEdit(p)}>Edit</button>
-                          {isExpired(p.expiry_date) && <button className="button-danger" onClick={()=>onDelete(p.id)}>Remove</button>}
+                          {(isExpired(p.expiry_date) || Number.parseInt(p.quantity || 0, 10) === 0) && <button className="button-danger" onClick={()=>onDelete(p.id)}>Remove</button>}
                       </div>
                     </td>
                   </tr>
@@ -151,7 +151,7 @@ const Products = () => {
                   <div className="approval-card-actions">
                     <div className="table-actions">
                       <button className="button-secondary" onClick={()=>onEdit(p)}>Edit</button>
-                          {isExpired(p.expiry_date) && <button className="button-danger" onClick={()=>onDelete(p.id)}>Remove</button>}
+                          {(isExpired(p.expiry_date) || Number.parseInt(p.quantity || 0, 10) === 0) && <button className="button-danger" onClick={()=>onDelete(p.id)}>Remove</button>}
                     </div>
                   </div>
                 </article>

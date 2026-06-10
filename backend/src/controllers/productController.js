@@ -81,14 +81,15 @@ const updateProduct = async (req, res) => {
 const deleteProduct = async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await db.query('SELECT id, expiry_date FROM products WHERE id=$1', [id]);
+    const result = await db.query('SELECT id, expiry_date, quantity FROM products WHERE id=$1', [id]);
     const product = result.rows[0];
     if (!product) return res.status(404).json({ error: 'Not found' });
 
     const expiryDate = product.expiry_date ? new Date(product.expiry_date) : null;
     const isExpired = expiryDate ? expiryDate.getTime() <= new Date().setHours(23, 59, 59, 999) : false;
-    if (!isExpired) {
-      return res.status(400).json({ error: 'Only expired products can be deleted' });
+    const quantity = Number.isFinite(Number(product.quantity)) ? Number(product.quantity) : 0;
+    if (!isExpired && quantity !== 0) {
+      return res.status(400).json({ error: 'Only expired or zero-quantity products can be deleted' });
     }
 
     await db.query('DELETE FROM products WHERE id=$1', [id]);
